@@ -272,7 +272,7 @@ bool KRShaderManager::compileAll(KRUnknown* logResource)
     std::string vertSourceName;
     std::string fragSourceName;
 
-    auto parse_shader = [&](KRSource* source, glslang::TShader& shader, const char** sourceText, int* sourceLen, const char** sourceNameStr, std::string& sourceName) {
+    auto parse_shader = [&](KRSource* source, glslang::TShader& shader, EShLanguage shaderType, const char** sourceText, int* sourceLen, const char** sourceNameStr, std::string& sourceName) {
       if(source == nullptr) {
         return;
       }
@@ -282,6 +282,14 @@ bool KRShaderManager::compileAll(KRUnknown* logResource)
       sourceNameStr[0] = sourceName.c_str();
       shader.setStringsWithLengthsAndNames(sourceText, sourceLen, sourceNameStr, 1);
       //shader.setStrings(&sourceStr, 1);
+
+      int ClientInputSemanticsVersion = 100; // maps to, say, #define VULKAN 100
+      glslang::EShTargetClientVersion VulkanClientVersion = glslang::EShTargetVulkan_1_0;
+      glslang::EShTargetLanguageVersion TargetVersion = glslang::EShTargetSpv_1_0;
+
+      shader.setEnvInput(glslang::EShSourceGlsl, shaderType, glslang::EShClientVulkan, ClientInputSemanticsVersion);
+      shader.setEnvClient(glslang::EShClientVulkan, VulkanClientVersion);
+      shader.setEnvTarget(glslang::EShTargetSpv, TargetVersion);
       
       if (shader.parse(&resources, defaultVersion, false, messages)) {
         program.addShader(&shader);
