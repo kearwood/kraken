@@ -32,7 +32,7 @@ else(WIN32)
 endif(WIN32)
 
 add_dependencies(kraken_cube kraken_cube_assets)
-target_include_directories(kraken_cube PRIVATE ${CMAKE_SOURCE_DIR}/hydra/include ${CMAKE_SOURCE_DIR}/kraken/public) 
+target_include_directories(kraken_cube PRIVATE ${PROJECT_SOURCE_DIR}/hydra/include ${PROJECT_SOURCE_DIR}/kraken/public) 
 
 TARGET_LINK_LIBRARIES( kraken_cube kraken ${EXTRA_LIBS} )
 

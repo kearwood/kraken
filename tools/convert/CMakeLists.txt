@@ -13,7 +13,7 @@ else(WIN32)
   set(CMAKE_CXX_COMPILER "clang++")
 endif(WIN32)
 
-target_include_directories(kraken_convert PRIVATE ${CMAKE_SOURCE_DIR}/hydra/include ${CMAKE_SOURCE_DIR}/kraken/public) 
+target_include_directories(kraken_convert PRIVATE ${PROJECT_SOURCE_DIR}/hydra/include ${PROJECT_SOURCE_DIR}/kraken/public) 
 
 TARGET_LINK_LIBRARIES( kraken_convert kraken ${EXTRA_LIBS} )
 
