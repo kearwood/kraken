@@ -118,9 +118,9 @@ KRTextureTGA::~KRTextureTGA()
 
 }
 
-bool KRTextureTGA::uploadTexture(KRDevice& device, VkImage& image, int lod_max_dim, int& current_lod_max_dim, bool premultiply_alpha)
+bool KRTextureTGA::getLodData(void* buffer, int lod_max_dim)
 {
-  // TODO - Vulkan Refactoring - Perhaps it would be more efficient to reformat the color channels during the copy to the staging buffer.
+  unsigned char* converted_image = (unsigned char*)buffer;
 
   m_pData->lock();
   TGA_HEADER* pHeader = (TGA_HEADER*)m_pData->getStart();
@@ -138,7 +138,7 @@ bool KRTextureTGA::uploadTexture(KRDevice& device, VkImage& image, int lod_max_d
     switch (pHeader->bitsperpixel) {
     case 24:
     {
-      unsigned char* converted_image = (unsigned char*)malloc(pHeader->width * pHeader->height * 4);
+      
       unsigned char* pSource = pData;
       unsigned char* pDest = converted_image;
       unsigned char* pEnd = pData + pHeader->height * pHeader->width * 3;
@@ -150,49 +150,22 @@ bool KRTextureTGA::uploadTexture(KRDevice& device, VkImage& image, int lod_max_d
         pSource += 3;
       }
       assert(pSource <= m_pData->getEnd());
-      device.streamUpload((void*)converted_image, pDest - converted_image, dimensions, image);
-      free(converted_image);
-
-      current_lod_max_dim = m_max_lod_max_dim;
     }
     break;
     case 32:
     {
-      if (premultiply_alpha) {
-        unsigned char* converted_image = (unsigned char*)malloc(pHeader->width * pHeader->height * 4);
-
         unsigned char* pSource = pData;
         unsigned char* pDest = converted_image;
         unsigned char* pEnd = pData + pHeader->height * pHeader->width * 3;
         while (pSource < pEnd) {
-          *pDest++ = (__uint32_t)pSource[2] * (__uint32_t)pSource[3] / 0xff;
-          *pDest++ = (__uint32_t)pSource[1] * (__uint32_t)pSource[3] / 0xff;
-          *pDest++ = (__uint32_t)pSource[0] * (__uint32_t)pSource[3] / 0xff;
-          *pDest++ = pSource[3];
-          pSource += 4;
-        }
-        assert(pSource <= m_pData->getEnd());
-        device.streamUpload((void*)converted_image, pDest - converted_image, dimensions, image);
-        free(converted_image);
-      } else {
-        unsigned char* converted_image = (unsigned char*)malloc(pHeader->width * pHeader->height * 4);
-
-        unsigned char* pSource = pData;
-        unsigned char* pDest = converted_image;
-        unsigned char* pEnd = pData + pHeader->height * pHeader->width * 3;
-        while (pSource < pEnd) {
-          *pDest++ = (__uint32_t)pSource[2];
-          *pDest++ = (__uint32_t)pSource[1];
-          *pDest++ = (__uint32_t)pSource[0];
-          *pDest++ = pSource[3];
-          pSource += 4;
-        }
-        assert(pSource <= m_pData->getEnd());
-        device.streamUpload((void*)converted_image, pDest - converted_image, dimensions, image);
-        free(converted_image);
+            *pDest++ = (__uint32_t)pSource[2];
+            *pDest++ = (__uint32_t)pSource[1];
+            *pDest++ = (__uint32_t)pSource[0];
+            *pDest++ = pSource[3];
+            pSource += 4;
+        
+            assert(pSource <= m_pData->getEnd());
       }
-
-      current_lod_max_dim = m_max_lod_max_dim;
     }
     break;
     default:
@@ -204,73 +177,40 @@ bool KRTextureTGA::uploadTexture(KRDevice& device, VkImage& image, int lod_max_d
     switch (pHeader->bitsperpixel) {
     case 32:
     {
-      unsigned char* converted_image = (unsigned char*)malloc(pHeader->width * pHeader->height * 4);
       unsigned char* pSource = pData;
       unsigned char* pDest = converted_image;
       unsigned char* pEnd = converted_image + pHeader->height * pHeader->width * 4;
-      if (premultiply_alpha) {
-        while (pDest < pEnd) {
-          int count = (*pSource & 0x7f) + 1;
-          if (*pSource & 0x80) {
-            // RLE Packet
-            pSource++;
-            while (count--) {
-              *pDest++ = (__uint32_t)pSource[2] * (__uint32_t)pSource[3] / 0xff;
-              *pDest++ = (__uint32_t)pSource[1] * (__uint32_t)pSource[3] / 0xff;
-              *pDest++ = (__uint32_t)pSource[0] * (__uint32_t)pSource[3] / 0xff;
-              *pDest++ = pSource[3];
-            }
+      
+      while (pDest < pEnd) {
+        int count = (*pSource & 0x7f) + 1;
+        if (*pSource & 0x80) {
+          // RLE Packet
+          pSource++;
+          while (count--) {
+            *pDest++ = pSource[2];
+            *pDest++ = pSource[1];
+            *pDest++ = pSource[0];
+            *pDest++ = pSource[3];
+          }
+          pSource += 4;
+        } else {
+          // RAW Packet
+          pSource++;
+          while (count--) {
+            *pDest++ = pSource[2];
+            *pDest++ = pSource[1];
+            *pDest++ = pSource[0];
+            *pDest++ = pSource[3];
             pSource += 4;
-          } else {
-            // RAW Packet
-            pSource++;
-            while (count--) {
-              *pDest++ = (__uint32_t)pSource[2] * (__uint32_t)pSource[3] / 0xff;
-              *pDest++ = (__uint32_t)pSource[1] * (__uint32_t)pSource[3] / 0xff;
-              *pDest++ = (__uint32_t)pSource[0] * (__uint32_t)pSource[3] / 0xff;
-              *pDest++ = pSource[3];
-              pSource += 4;
-            }
           }
         }
-        assert(pSource <= m_pData->getEnd());
-        assert(pDest == pEnd);
-      } else {
-        while (pDest < pEnd) {
-          int count = (*pSource & 0x7f) + 1;
-          if (*pSource & 0x80) {
-            // RLE Packet
-            pSource++;
-            while (count--) {
-              *pDest++ = pSource[2];
-              *pDest++ = pSource[1];
-              *pDest++ = pSource[0];
-              *pDest++ = pSource[3];
-            }
-            pSource += 4;
-          } else {
-            // RAW Packet
-            pSource++;
-            while (count--) {
-              *pDest++ = pSource[2];
-              *pDest++ = pSource[1];
-              *pDest++ = pSource[0];
-              *pDest++ = pSource[3];
-              pSource += 4;
-            }
-          }
-        }
-        assert(pSource <= m_pData->getEnd());
-        assert(pDest == pEnd);
       }
-      device.streamUpload((void*)converted_image, pDest - converted_image, dimensions, image);
-      free(converted_image);
-      current_lod_max_dim = m_max_lod_max_dim;
+      assert(pSource <= m_pData->getEnd());
+      assert(pDest == pEnd);
     }
     break;
     case 24:
     {
-      unsigned char* converted_image = (unsigned char*)malloc(pHeader->width * pHeader->height * 4);
       unsigned char* pSource = pData;
       unsigned char* pDest = converted_image;
       unsigned char* pEnd = converted_image + pHeader->height * pHeader->width * 4;
@@ -300,9 +240,6 @@ bool KRTextureTGA::uploadTexture(KRDevice& device, VkImage& image, int lod_max_d
       }
       assert(pSource <= m_pData->getEnd());
       assert(pDest == pEnd);
-      device.streamUpload((void*)converted_image, pDest - converted_image, dimensions, image);
-      free(converted_image);
-      current_lod_max_dim = m_max_lod_max_dim;
     }
     break;
     default:

@@ -32,6 +32,7 @@
 #include "KREngine-common.h"
 #include "KRTexture2D.h"
 #include "KRTextureManager.h"
+using namespace hydra;
 
 using namespace mimir;
 
@@ -49,6 +50,16 @@ bool KRTexture2D::createGPUTexture(int lod_max_dim)
 {
   if (m_haveNewHandles) {
     return true;
+  }
+
+  Vector2i dimensions2d = getDimensions();
+  Vector3i dimensions = { dimensions2d.x, dimensions2d.y, 1 };
+  size_t bufferSize = getMemRequiredForSize(lod_max_dim);
+  void* buffer = malloc(bufferSize);
+
+  if (!getLodData(buffer, lod_max_dim)) {
+    delete buffer;
+    return false;
   }
 
   bool success = true;
@@ -91,11 +102,10 @@ bool KRTexture2D::createGPUTexture(int lod_max_dim)
       break;
     }
 
-    if (!uploadTexture(device, texture.image, lod_max_dim, m_new_lod_max_dim)) {
-      success = false;
-      break;
-    }
+    device.streamUpload((void*)buffer, bufferSize, dimensions, texture.image);
   }
+
+  delete buffer;
 
   if (success) {
     m_new_lod_max_dim = prev_lod_max_dim;

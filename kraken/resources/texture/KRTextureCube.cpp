@@ -93,6 +93,14 @@ bool KRTextureCube::createGPUTexture(int lod_max_dim)
     return false;
   }
 
+  size_t bufferSizes[6] = {};
+  void* buffers[6] = {};
+  for (int i = 0; i < 6; i++) {
+      bufferSizes[i] = getMemRequiredForSize(lod_max_dim);
+      buffers[i] = malloc(bufferSizes[i]);
+	  m_textures[i]->getLodData(buffers[i], lod_max_dim);
+  }
+
   KRDeviceManager* deviceManager = getContext().getDeviceManager();
 
   for (auto deviceItr = deviceManager->getDevices().begin(); deviceItr != deviceManager->getDevices().end(); deviceItr++) {
@@ -117,7 +125,7 @@ bool KRTextureCube::createGPUTexture(int lod_max_dim)
       std::string faceName = getName() + SUFFIXES[i];
       if (m_textures[i]) {
         // TODO - Vulkan refactoring.  We need to create a cube map texture rather than individual 2d textures.
-        m_textures[i]->uploadTexture(device, texture.image, lod_max_dim, m_new_lod_max_dim);
+          device.streamUpload(buffers[i], bufferSizes[i], Vector3i::Create(dimensions.x, dimensions.y, 1), texture.image);
       }
     }
   }
@@ -126,6 +134,12 @@ bool KRTextureCube::createGPUTexture(int lod_max_dim)
   } else {
     destroyHandles();
     m_new_lod_max_dim = prev_lod_max_dim;
+  }
+
+  for (int i = 0; i < 6; i++) {
+      if (buffers[i]) {
+          delete buffers[i];
+      }
   }
 
   return success;

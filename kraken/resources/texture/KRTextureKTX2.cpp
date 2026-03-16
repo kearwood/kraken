@@ -112,8 +112,9 @@ long KRTextureKTX2::getMemRequiredForSize(int max_dim)
   return memoryRequired;
 }
 
-bool KRTextureKTX2::uploadTexture(KRDevice& device, VkImage& image, int lod_max_dim, int& current_lod_max_dim, bool premultiply_alpha)
+bool KRTextureKTX2::getLodData(void* buffer, int lod_max_dim)
 {
+  unsigned char* converted_image = (unsigned char*)buffer;
   int target_dim = lod_max_dim;
   if (target_dim < (int)m_min_lod_max_dim) target_dim = m_min_lod_max_dim;
 
@@ -133,13 +134,6 @@ bool KRTextureKTX2::uploadTexture(KRDevice& device, VkImage& image, int lod_max_
     m_pData->copy(&levelIndex, sizeof(m_header) + sizeof(KTX2LevelIndex) * level, sizeof(KTX2LevelIndex));
 
     if (width <= target_dim && height <= target_dim) {
-
-      if (width > current_lod_max_dim) {
-        current_lod_max_dim = width;
-      }
-      if (height > current_lod_max_dim) {
-        current_lod_max_dim = height;
-      }
 
       /*
       * TODO - Vulkan Refactoring

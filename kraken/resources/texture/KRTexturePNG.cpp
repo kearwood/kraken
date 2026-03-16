@@ -113,8 +113,9 @@ KRTexturePNG::~KRTexturePNG()
 
 }
 
-bool KRTexturePNG::uploadTexture(KRDevice& device, VkImage& image, int lod_max_dim, int& current_lod_max_dim, bool premultiply_alpha)
+bool KRTexturePNG::getLodData(void* buffer, int lod_max_dim)
 {
+    unsigned char* converted_image = (unsigned char*)buffer;
   // TODO - Vulkan Refactoring - Perhaps it would be more efficient to reformat the color channels during the copy to the staging buffer.
   m_pData->lock();
   PNG_HEADER* pHeader = (PNG_HEADER*)m_pData->getStart();
@@ -144,11 +145,6 @@ bool KRTexturePNG::uploadTexture(KRDevice& device, VkImage& image, int lod_max_d
 	  }
   }
 
-  uint8_t* converted_image = (unsigned char*)malloc(m_imageSize);
-  Vector3i dimensions = { m_dimensions.x, m_dimensions.y, 1 };
-  device.streamUpload((void*)converted_image, m_imageSize, dimensions, image);
-  current_lod_max_dim = m_max_lod_max_dim;
-  m_pData->unlock();
   return true;
 }
 

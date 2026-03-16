@@ -42,7 +42,7 @@ public:
   virtual ~KRTextureTGA();
   virtual std::string getExtension() override;
 
-  bool uploadTexture(KRDevice& device, VkImage& image, int lod_max_dim, int& current_lod_max_dim, bool premultiply_alpha = false) override;
+  bool getLodData(void* buffer, int lod_max_dim) override;
 
 #if !TARGET_OS_IPHONE && !defined(ANDROID)
   virtual KRTexture* compress(bool premultiply_alpha = false) override;
