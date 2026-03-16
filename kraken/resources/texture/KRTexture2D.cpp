@@ -52,8 +52,7 @@ bool KRTexture2D::createGPUTexture(int lod_max_dim)
     return true;
   }
 
-  Vector2i dimensions2d = getDimensions();
-  Vector3i dimensions = { dimensions2d.x, dimensions2d.y, 1 };
+  Vector3i dimensions = getDimensions();
   size_t bufferSize = getMemRequiredForSize(lod_max_dim);
   void* buffer = malloc(bufferSize);
 

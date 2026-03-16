@@ -53,10 +53,13 @@ KRTextureAnimated::KRTextureAnimated(KRContext& context, std::string name) : KRT
 
   m_max_lod_max_dim = 2048;
   m_min_lod_max_dim = 64;
+  m_dimensions = Vector2i::Create(0, 0);
 
   for (int i = 0; i < m_frame_count; i++) {
     KRTexture2D* frame_texture = textureForFrame(i);
     if (frame_texture) {
+	  m_dimensions.x = std::max(m_dimensions.x, frame_texture->getDimensions().x);
+	  m_dimensions.y = std::max(m_dimensions.y, frame_texture->getDimensions().y);
       if (frame_texture->getMaxMipMap() < (int)m_max_lod_max_dim) m_max_lod_max_dim = frame_texture->getMaxMipMap();
       if (frame_texture->getMinMipMap() > (int)m_min_lod_max_dim) m_min_lod_max_dim = frame_texture->getMinMipMap();
     }
@@ -161,4 +164,9 @@ int KRTextureAnimated::getFaceCount() const
 VkFormat KRTextureAnimated::getFormat() const
 {
   return VK_FORMAT_UNDEFINED;
+}
+
+hydra::Vector3i KRTextureAnimated::getDimensions() const
+{
+	return Vector3i::Create(m_dimensions.x, m_dimensions.y, 1);
 }

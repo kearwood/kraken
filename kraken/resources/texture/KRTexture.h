@@ -89,6 +89,7 @@ public:
   bool hasMipmaps();
   virtual int getFaceCount() const = 0;
   virtual VkFormat getFormat() const = 0;
+  virtual hydra::Vector3i getDimensions() const = 0;
 
   kraken_stream_level getStreamLevel();
   float getLastFrameLodCoverage() const;
@@ -129,7 +130,7 @@ protected:
   float m_last_frame_max_lod_coverage;
   texture_usage_t m_last_frame_usage;
 
-  bool allocate(KRDevice& device, hydra::Vector2i dimensions, VkImageCreateFlags imageCreateFlags, VkMemoryPropertyFlags properties, VkImage* image, VmaAllocation* allocation
+  bool allocate(KRDevice& device, hydra::Vector3i dimensions, VkImageCreateFlags imageCreateFlags, VkMemoryPropertyFlags properties, VkImage* image, VmaAllocation* allocation
 #if KRENGINE_DEBUG_GPU_LABELS  
   , const char* debug_label
 #endif

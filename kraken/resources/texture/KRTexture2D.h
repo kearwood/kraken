@@ -49,7 +49,6 @@ public:
   virtual bool save(mimir::Block& data) override;
 
   virtual bool getLodData(void* buffer, int lod_max_dim) = 0;
-  virtual hydra::Vector2i getDimensions() const = 0;
 
 protected:
   mimir::Block* m_pData;

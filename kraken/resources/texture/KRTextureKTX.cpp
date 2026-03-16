@@ -127,9 +127,9 @@ KRTextureKTX::~KRTextureKTX()
   m_blocks.clear();
 }
 
-Vector2i KRTextureKTX::getDimensions() const
+Vector3i KRTextureKTX::getDimensions() const
 {
-  return hydra::Vector2i::Create(Vector2i::Create(m_header.pixelWidth, m_header.pixelHeight));
+  return hydra::Vector3i::Create(Vector3i::Create(m_header.pixelWidth, m_header.pixelHeight, m_header.pixelDepth));
 }
 
 int KRTextureKTX::getFaceCount() const

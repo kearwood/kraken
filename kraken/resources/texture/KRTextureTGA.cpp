@@ -343,9 +343,9 @@ long KRTextureTGA::getMemRequiredForSize(int max_dim)
   return m_imageSize;
 }
 
-Vector2i KRTextureTGA::getDimensions() const
+Vector3i KRTextureTGA::getDimensions() const
 {
-  return m_dimensions;
+  return Vector3i::Create(m_dimensions.x, m_dimensions.y, 1);
 }
 
 VkFormat KRTextureTGA::getFormat() const

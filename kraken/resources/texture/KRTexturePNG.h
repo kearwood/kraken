@@ -49,7 +49,7 @@ public:
 #endif
 
   virtual long getMemRequiredForSize(int max_dim) override;
-  virtual hydra::Vector2i getDimensions() const override;
+  virtual hydra::Vector3i getDimensions() const override;
   virtual VkFormat getFormat() const override;
   virtual int getFaceCount() const override;
 private:

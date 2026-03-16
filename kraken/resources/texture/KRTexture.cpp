@@ -286,7 +286,7 @@ VkImage KRTexture::getImage(KrDeviceHandle device)
   return VK_NULL_HANDLE;
 }
 
-bool KRTexture::allocate(KRDevice& device, hydra::Vector2i dimensions, VkImageCreateFlags imageCreateFlags, VkMemoryPropertyFlags properties, VkImage* image, VmaAllocation* allocation
+bool KRTexture::allocate(KRDevice& device, hydra::Vector3i dimensions, VkImageCreateFlags imageCreateFlags, VkMemoryPropertyFlags properties, VkImage* image, VmaAllocation* allocation
 #if KRENGINE_DEBUG_GPU_LABELS  
 , const char* debug_label
 #endif
@@ -297,7 +297,7 @@ bool KRTexture::allocate(KRDevice& device, hydra::Vector2i dimensions, VkImageCr
   imageInfo.imageType = VK_IMAGE_TYPE_2D;
   imageInfo.extent.width = static_cast<uint32_t>(dimensions.x);
   imageInfo.extent.height = static_cast<uint32_t>(dimensions.y);
-  imageInfo.extent.depth = 1;
+  imageInfo.extent.depth = static_cast<uint32_t>(dimensions.z);
   imageInfo.mipLevels = 1;
   imageInfo.arrayLayers = 1;
   imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;

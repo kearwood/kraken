@@ -76,9 +76,9 @@ KRTextureKTX2::~KRTextureKTX2()
 {
 }
 
-Vector2i KRTextureKTX2::getDimensions() const
+Vector3i KRTextureKTX2::getDimensions() const
 {
-  return Vector2i::Create(Vector2i::Create(m_header.pixelWidth, m_header.pixelHeight));
+  return Vector3i::Create(Vector3i::Create(m_header.pixelWidth, m_header.pixelHeight, m_header.pixelDepth));
 }
 
 long KRTextureKTX2::getMemRequiredForSize(int max_dim)

@@ -163,9 +163,9 @@ long KRTexturePNG::getMemRequiredForSize(int max_dim)
   return m_imageSize;
 }
 
-Vector2i KRTexturePNG::getDimensions() const
+Vector3i KRTexturePNG::getDimensions() const
 {
-  return m_dimensions;
+  return Vector3i::Create(m_dimensions.x, m_dimensions.y, 1);
 }
 
 VkFormat KRTexturePNG::getFormat() const

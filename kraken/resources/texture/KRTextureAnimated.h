@@ -35,6 +35,7 @@
 #include "KRTexture2D.h"
 
 using namespace mimir;
+using namespace hydra;
 
 class KRTextureAnimated : public KRTexture
 {
@@ -54,6 +55,7 @@ public:
   virtual void resize(int max_dim) override;
   virtual int getFaceCount() const override;
   virtual VkFormat getFormat() const override;
+  virtual hydra::Vector3i getDimensions() const override;
 
 private:
   bool createGPUTexture(int lod_max_dim) override;
@@ -64,4 +66,6 @@ private:
   std::string m_texture_base_name;
   std::string textureNameForFrame(int frame);
   KRTexture2D* textureForFrame(int frame);
+
+  Vector2i m_dimensions;
 };

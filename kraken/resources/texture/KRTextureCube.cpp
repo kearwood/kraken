@@ -38,7 +38,6 @@ using namespace hydra;
 
 KRTextureCube::KRTextureCube(KRContext& context, std::string name) : KRTexture(context, name)
 {
-
   m_max_lod_max_dim = 2048;
   m_min_lod_max_dim = 64;
 
@@ -75,7 +74,7 @@ bool KRTextureCube::createGPUTexture(int lod_max_dim)
       success = false;
     } else {
       KRTexture2D& tex = *m_textures[i];
-      Vector2i texDimensions = tex.getDimensions();
+      Vector2i texDimensions = tex.getDimensions().xy();
       if (dimensions.x == 0) {
         dimensions = texDimensions;
       } else if (dimensions != texDimensions) {
@@ -112,7 +111,7 @@ bool KRTextureCube::createGPUTexture(int lod_max_dim)
     texture.allocation = VK_NULL_HANDLE;
     texture.image = VK_NULL_HANDLE;
 
-    if (!allocate(device, dimensions, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texture.image, &texture.allocation
+    if (!allocate(device, Vector3i::Create(dimensions.x, dimensions.y, 1), VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texture.image, &texture.allocation
 #if KRENGINE_DEBUG_GPU_LABELS
       , getName().c_str()
 #endif
@@ -194,4 +193,9 @@ VkFormat KRTextureCube::getFormat() const
 {
   // TODO - Implement
   return VK_FORMAT_UNDEFINED;
+}
+
+hydra::Vector3i KRTextureCube::getDimensions() const
+{
+	return m_textures[0] ? m_textures[0]->getDimensions() : Vector3i::Zero();
 }
