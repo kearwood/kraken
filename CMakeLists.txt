@@ -6,6 +6,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (WIN32)
   add_definitions(-D_HAS_EXCEPTIONS=0)
+  string(REPLACE "/GR" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 endif()
 
 if (NOT WIN32 AND NOT ANDROID)
