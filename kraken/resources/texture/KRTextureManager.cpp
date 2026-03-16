@@ -33,6 +33,7 @@
 #include "KRTextureManager.h"
 #include "KRContext.h"
 #include "KRTexture2D.h"
+#include "KRTexturePNG.h"
 #include "KRTexturePVR.h"
 #include "KRTextureTGA.h"
 #include "KRTextureKTX.h"
@@ -107,8 +108,9 @@ KRTexture* KRTextureManager::loadTexture(const char* szName, const char* szExten
   std::transform(lowerExtension.begin(), lowerExtension.end(),
                  lowerExtension.begin(), ::tolower);
 
-
-  if (strcmp(szExtension, "pvr") == 0) {
+  if (strcmp(szExtension, "png") == 0) {
+      pTexture = new KRTexturePNG(getContext(), data, szName);
+  } else if (strcmp(szExtension, "pvr") == 0) {
     pTexture = new KRTexturePVR(getContext(), data, szName);
   } else if (strcmp(szExtension, "tga") == 0) {
     pTexture = new KRTextureTGA(getContext(), data, szName);

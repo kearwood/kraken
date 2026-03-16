@@ -316,6 +316,8 @@ KRResource* KRContext::loadResource(const std::string& file_name, Block* data)
     resource = m_pAnimationManager->loadAnimation(name.c_str(), data);
   } else if (extension.compare("kranimationcurve") == 0) {
     resource = m_pAnimationCurveManager->loadAnimationCurve(name.c_str(), data);
+  } else if (extension.compare("png") == 0) {
+      resource = m_pTextureManager->loadTexture(name.c_str(), extension.c_str(), data);
   } else if (extension.compare("pvr") == 0) {
     resource = m_pTextureManager->loadTexture(name.c_str(), extension.c_str(), data);
   } else if (extension.compare("ktx") == 0) {
