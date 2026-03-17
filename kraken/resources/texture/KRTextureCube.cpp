@@ -38,16 +38,14 @@ using namespace hydra;
 
 KRTextureCube::KRTextureCube(KRContext& context, std::string name) : KRTexture(context, name)
 {
-  m_max_lod_max_dim = 2048;
-  m_min_lod_max_dim = 64;
+  m_lod_count = 0;
 
   for (int i = 0; i < 6; i++) {
     m_textures[i] = NULL;
     std::string faceName = getName() + SUFFIXES[i];
     m_textures[i] = (KRTexture2D*)getContext().getTextureManager()->getTexture(faceName);
     if (m_textures[i]) {
-      if (m_textures[i]->getMaxMipMap() < (int)m_max_lod_max_dim) m_max_lod_max_dim = m_textures[i]->getMaxMipMap();
-      if (m_textures[i]->getMinMipMap() > (int)m_min_lod_max_dim) m_min_lod_max_dim = m_textures[i]->getMinMipMap();
+	  m_lod_count = std::max(m_lod_count, m_textures[i]->getLodCount());
     } else {
       assert(false);
     }
@@ -57,14 +55,14 @@ KRTextureCube::KRTextureCube(KRContext& context, std::string name) : KRTexture(c
 KRTextureCube::~KRTextureCube()
 {}
 
-bool KRTextureCube::createGPUTexture(int lod_max_dim)
+bool KRTextureCube::createGPUTexture(int lod)
 {
   assert(!m_haveNewHandles); // Only allow one resize per frame
 
   bool success = true;
 
-  int prev_lod_max_dim = m_new_lod_max_dim;
-  m_new_lod_max_dim = 0;
+  int prev_lod = m_new_lod;
+  m_new_lod = -1;
   bool bMipMaps = false;
 
   Vector2i dimensions = Vector2i::Zero();
@@ -95,9 +93,9 @@ bool KRTextureCube::createGPUTexture(int lod_max_dim)
   size_t bufferSizes[6] = {};
   void* buffers[6] = {};
   for (int i = 0; i < 6; i++) {
-      bufferSizes[i] = getMemRequiredForSize(lod_max_dim);
+      bufferSizes[i] = getMemRequiredForLod(lod);
       buffers[i] = malloc(bufferSizes[i]);
-	  m_textures[i]->getLodData(buffers[i], lod_max_dim);
+	  m_textures[i]->getLodData(buffers[i], lod);
   }
 
   KRDeviceManager* deviceManager = getContext().getDeviceManager();
@@ -132,7 +130,7 @@ bool KRTextureCube::createGPUTexture(int lod_max_dim)
     m_haveNewHandles = true;
   } else {
     destroyHandles();
-    m_new_lod_max_dim = prev_lod_max_dim;
+    m_new_lod = prev_lod;
   }
 
   for (int i = 0; i < 6; i++) {
@@ -144,15 +142,12 @@ bool KRTextureCube::createGPUTexture(int lod_max_dim)
   return success;
 }
 
-long KRTextureCube::getMemRequiredForSize(int max_dim)
+long KRTextureCube::getMemRequiredForLod(int lod)
 {
-  int target_dim = max_dim;
-  if (target_dim < (int)m_min_lod_max_dim) target_dim = m_min_lod_max_dim;
-
   long memoryRequired = 0;
   for (int i = 0; i < 6; i++) {
     if (m_textures[i]) {
-      memoryRequired += m_textures[i]->getMemRequiredForSize(target_dim);
+      memoryRequired += m_textures[i]->getMemRequiredForLod(lod);
     }
   }
   return memoryRequired;

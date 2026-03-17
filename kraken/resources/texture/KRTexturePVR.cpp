@@ -172,39 +172,27 @@ VkFormat KRTexturePVR::getFormat() const
   }
 }
 
-long KRTexturePVR::getMemRequiredForSize(int max_dim)
+long KRTexturePVR::getMemRequiredForLod(int lod)
 {
-  int target_dim = max_dim;
-  if (target_dim < (int)m_min_lod_max_dim) target_dim = target_dim;
-
   // Determine how much memory will be consumed
-  int width = m_iWidth;
-  int height = m_iHeight;
   long memoryRequired = 0;
+  int level = 0;
 
   for (std::list<Block*>::iterator itr = m_blocks.begin(); itr != m_blocks.end(); itr++) {
     Block* block = *itr;
-    if (width <= target_dim && height <= target_dim) {
+    if (level >= lod) {
       memoryRequired += (long)block->getSize();
     }
 
-    width = width >> 1;
-    if (width < 1) {
-      width = 1;
-    }
-    height = height >> 1;
-    if (height < 1) {
-      height = 1;
-    }
+    level++;
   }
 
   return memoryRequired;
 }
 
-bool KRTexturePVR::getLodData(void* buffer, int lod_max_dim)
+bool KRTexturePVR::getLodData(void* buffer, int lod)
 {
-  int target_dim = lod_max_dim;
-  if (target_dim < (int)m_min_lod_max_dim) target_dim = m_min_lod_max_dim;
+  int target_lod = KRMIN(lod, m_lod_count);
 
   if (m_blocks.size() == 0) {
     return false;
@@ -217,19 +205,10 @@ bool KRTexturePVR::getLodData(void* buffer, int lod_max_dim)
   long memoryTransferred = 0;
 
   // Upload texture data
-  int destination_level = 0;
-  int source_level = 0;
+  int level = 0;
   for (std::list<Block*>::iterator itr = m_blocks.begin(); itr != m_blocks.end(); itr++) {
     Block* block = *itr;
-    if (width <= target_dim && height <= target_dim) {
-      /*
-      if (width > current_lod_max_dim) {
-        current_lod_max_dim = width;
-      }
-      if (height > current_lod_max_dim) {
-        current_lod_max_dim = height;
-      }
-      */
+    if (level >= target_lod) {
 
       block->lock();
       /*
@@ -245,23 +224,10 @@ bool KRTexturePVR::getLodData(void* buffer, int lod_max_dim)
       //                assert(false);
       //                return false;
       //            }
-      //        
-
-      destination_level++;
+      //
     }
 
-    if (width <= m_current_lod_max_dim && height <= m_current_lod_max_dim) {
-      source_level++;
-    }
-
-    width = width >> 1;
-    if (width < 1) {
-      width = 1;
-    }
-    height = height >> 1;
-    if (height < 1) {
-      height = 1;
-    }
+    level++;
   }
 
   return true;

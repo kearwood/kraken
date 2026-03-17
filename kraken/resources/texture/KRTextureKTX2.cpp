@@ -68,8 +68,7 @@ KRTextureKTX2::KRTextureKTX2(KRContext& context, Block* data, std::string name) 
   if (height < 1) {
     height = 1;
   }
-  m_max_lod_max_dim = KRMAX(m_header.pixelWidth, m_header.pixelHeight);
-  m_min_lod_max_dim = KRMAX(width, height);
+  m_lod_count = (int)KRMAX(m_header.levelCount, 1) - 1;
 }
 
 KRTextureKTX2::~KRTextureKTX2()
@@ -81,59 +80,42 @@ Vector3i KRTextureKTX2::getDimensions() const
   return Vector3i::Create(Vector3i::Create(m_header.pixelWidth, m_header.pixelHeight, m_header.pixelDepth));
 }
 
-long KRTextureKTX2::getMemRequiredForSize(int max_dim)
+long KRTextureKTX2::getMemRequiredForLod(int lod)
 {
-  int target_dim = max_dim;
-  if (target_dim < (int)m_min_lod_max_dim) target_dim = target_dim;
+  int target_lod = KRMIN(lod, m_lod_count);
 
   // Determine how much memory will be consumed
-
-  int width = m_header.pixelWidth;
-  int height = m_header.pixelHeight;
   long memoryRequired = 0;
 
+  int level = 0;
   for (__uint32_t level = 0; level < m_header.levelCount; level++) {
     KTX2LevelIndex levelIndex;
     m_pData->copy(&levelIndex, sizeof(m_header) + sizeof(KTX2LevelIndex) * level, sizeof(KTX2LevelIndex));
-    if (width <= target_dim && height <= target_dim) {
+    if (level >= target_lod) {
       memoryRequired += (long)levelIndex.byteLength;
     }
-
-    width = width >> 1;
-    if (width < 1) {
-      width = 1;
-    }
-    height = height >> 1;
-    if (height < 1) {
-      height = 1;
-    }
+    level++;
   }
 
   return memoryRequired;
 }
 
-bool KRTextureKTX2::getLodData(void* buffer, int lod_max_dim)
+bool KRTextureKTX2::getLodData(void* buffer, int lod)
 {
   unsigned char* converted_image = (unsigned char*)buffer;
-  int target_dim = lod_max_dim;
-  if (target_dim < (int)m_min_lod_max_dim) target_dim = m_min_lod_max_dim;
+  int target_lod = KRMIN(lod, m_lod_count);
 
   // Determine how much memory will be consumed
-  int width = m_header.pixelWidth;
-  int height = m_header.pixelHeight;
   long memoryRequired = 0;
   long memoryTransferred = 0;
 
-
-  // Upload texture data
-  int destination_level = 0;
-  int source_level = 0;
+  int level = 0;
 
   for (__uint32_t level = 0; level < m_header.levelCount; level++) {
     KTX2LevelIndex levelIndex;
     m_pData->copy(&levelIndex, sizeof(m_header) + sizeof(KTX2LevelIndex) * level, sizeof(KTX2LevelIndex));
 
-    if (width <= target_dim && height <= target_dim) {
+    if (level >= target_lod) {
 
       /*
       * TODO - Vulkan Refactoring
@@ -150,21 +132,9 @@ bool KRTextureKTX2::getLodData(void* buffer, int lod_max_dim)
       //            }
       //
 
-      destination_level++;
     }
 
-    if (width <= m_current_lod_max_dim && height <= m_current_lod_max_dim) {
-      source_level++;
-    }
-
-    width = width >> 1;
-    if (width < 1) {
-      width = 1;
-    }
-    height = height >> 1;
-    if (height < 1) {
-      height = 1;
-    }
+    level++;
   }
 
   return true;

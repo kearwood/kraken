@@ -82,8 +82,7 @@ KRTextureKTX::KRTextureKTX(KRContext& context, Block* data, std::string name) : 
     }
   }
 
-  m_max_lod_max_dim = KRMAX(m_header.pixelWidth, m_header.pixelHeight);
-  m_min_lod_max_dim = KRMAX(width, height);
+  m_lod_count = (int)KRMAX(m_header.numberOfMipmapLevels, 1) - 1;
 }
 
 KRTextureKTX::KRTextureKTX(KRContext& context, std::string name, unsigned int internal_format, unsigned int base_internal_format, int width, int height, const std::list<Block*>& blocks) : KRTexture2D(context, new Block(), name)
@@ -361,59 +360,43 @@ VkFormat KRTextureKTX::getFormat() const
   }
 }
 
-long KRTextureKTX::getMemRequiredForSize(int max_dim)
+long KRTextureKTX::getMemRequiredForLod(int lod)
 {
-  int target_dim = max_dim;
-  if (target_dim < (int)m_min_lod_max_dim) target_dim = target_dim;
-
   // Determine how much memory will be consumed
 
-  int width = m_header.pixelWidth;
-  int height = m_header.pixelHeight;
   long memoryRequired = 0;
 
+  int level = 0;
   for (std::list<Block*>::iterator itr = m_blocks.begin(); itr != m_blocks.end(); itr++) {
     Block* block = *itr;
-    if (width <= target_dim && height <= target_dim) {
+    if (level >= lod) {
       memoryRequired += (long)block->getSize();
     }
 
-    width = width >> 1;
-    if (width < 1) {
-      width = 1;
-    }
-    height = height >> 1;
-    if (height < 1) {
-      height = 1;
-    }
+    level++;
   }
 
   return memoryRequired;
 }
 
-bool KRTextureKTX::getLodData(void* buffer, int lod_max_dim)
+bool KRTextureKTX::getLodData(void* buffer, int lod)
 {
   unsigned char* converted_image = (unsigned char*)buffer;
-  int target_dim = lod_max_dim;
-  if (target_dim < (int)m_min_lod_max_dim) target_dim = m_min_lod_max_dim;
+  int target_lod = KRMIN(lod, m_lod_count);
 
   if (m_blocks.size() == 0) {
     return false;
   }
 
   // Determine how much memory will be consumed
-  int width = m_header.pixelWidth;
-  int height = m_header.pixelHeight;
   long memoryRequired = 0;
   long memoryTransferred = 0;
 
-
   // Upload texture data
-  int destination_level = 0;
-  int source_level = 0;
+  int level = 0;
   for (std::list<Block*>::iterator itr = m_blocks.begin(); itr != m_blocks.end(); itr++) {
     Block* block = *itr;
-    if (width <= target_dim && height <= target_dim) {
+    if (level >= target_lod) {
 
       /*
       if (width > current_lod_max_dim) {
@@ -440,22 +423,9 @@ bool KRTextureKTX::getLodData(void* buffer, int lod_max_dim)
       //                return false;
       //            }
       //
-
-      destination_level++;
     }
 
-    if (width <= m_current_lod_max_dim && height <= m_current_lod_max_dim) {
-      source_level++;
-    }
-
-    width = width >> 1;
-    if (width < 1) {
-      width = 1;
-    }
-    height = height >> 1;
-    if (height < 1) {
-      height = 1;
-    }
+    level++;
   }
 
   return true;

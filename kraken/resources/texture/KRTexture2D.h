@@ -48,10 +48,10 @@ public:
   virtual bool save(const std::string& path) override;
   virtual bool save(mimir::Block& data) override;
 
-  virtual bool getLodData(void* buffer, int lod_max_dim) = 0;
+  virtual bool getLodData(void* buffer, int lod) = 0;
 
 protected:
   mimir::Block* m_pData;
 
-  bool createGPUTexture(int lod_max_dim) override;
+  bool createGPUTexture(int lod) override;
 };

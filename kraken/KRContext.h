@@ -65,8 +65,9 @@ public:
   static int KRENGINE_GPU_MEM_MAX;
   static int KRENGINE_GPU_MEM_TARGET;
   static int KRENGINE_MAX_TEXTURE_DIM;
-  static int KRENGINE_MIN_TEXTURE_DIM;
   static int KRENGINE_PRESTREAM_DISTANCE;
+  static int KRENGINE_TEXTURE_HQ_LOD;
+  static int KRENGINE_TEXTURE_LQ_LOD;
 
 
   KRContext(const KrInitializeInfo* initializeInfo);

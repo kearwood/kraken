@@ -42,13 +42,13 @@ public:
   virtual ~KRTextureTGA();
   virtual std::string getExtension() override;
 
-  bool getLodData(void* buffer, int lod_max_dim) override;
+  bool getLodData(void* buffer, int lod) override;
 
 #if !TARGET_OS_IPHONE && !defined(ANDROID)
   virtual KRTexture* compress(bool premultiply_alpha = false) override;
 #endif
 
-  virtual long getMemRequiredForSize(int max_dim) override;
+  virtual long getMemRequiredForLod(int lod) override;
   virtual hydra::Vector3i getDimensions() const override;
   virtual VkFormat getFormat() const override;
   virtual int getFaceCount() const override;

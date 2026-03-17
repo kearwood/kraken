@@ -77,8 +77,7 @@ KRTexturePNG::KRTexturePNG(KRContext& context, Block* data, std::string name) : 
 
   m_dimensions.x = SWAP_4(pHeader->chunk_IHDR.width);
   m_dimensions.y = SWAP_4(pHeader->chunk_IHDR.height);
-  m_max_lod_max_dim = m_dimensions.x > m_dimensions.y ? m_dimensions.x : m_dimensions.y;
-  m_min_lod_max_dim = m_max_lod_max_dim; // Mipmaps not yet supported for PNG images
+  m_lod_count = 0; // Mipmaps not yet supported for PNG images
   switch (pHeader->chunk_IHDR.colorType) {
   case 0:
       // greyscale
@@ -113,9 +112,9 @@ KRTexturePNG::~KRTexturePNG()
 
 }
 
-bool KRTexturePNG::getLodData(void* buffer, int lod_max_dim)
+bool KRTexturePNG::getLodData(void* buffer, int lod)
 {
-    unsigned char* converted_image = (unsigned char*)buffer;
+  unsigned char* converted_image = (unsigned char*)buffer;
   // TODO - Vulkan Refactoring - Perhaps it would be more efficient to reformat the color channels during the copy to the staging buffer.
   m_pData->lock();
   PNG_HEADER* pHeader = (PNG_HEADER*)m_pData->getStart();
@@ -158,7 +157,7 @@ KRTexture* KRTexturePNG::compress(bool premultiply_alpha)
 }
 #endif
 
-long KRTexturePNG::getMemRequiredForSize(int max_dim)
+long KRTexturePNG::getMemRequiredForLod(int lod)
 {
   return m_imageSize;
 }

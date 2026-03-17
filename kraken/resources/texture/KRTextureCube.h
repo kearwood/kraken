@@ -44,14 +44,14 @@ public:
   virtual bool save(const std::string& path) override;
   virtual bool save(mimir::Block& data) override;
 
-  virtual long getMemRequiredForSize(int max_dim) override;
+  virtual long getMemRequiredForLod(int lod) override;
   virtual void requestResidency(float lodCoverage, texture_usage_t textureUsage) override;
   virtual int getFaceCount() const override;
   virtual VkFormat getFormat() const override;
   virtual hydra::Vector3i getDimensions() const override;
 
 private:
-  bool createGPUTexture(int lod_max_dim) override;
+  bool createGPUTexture(int lod) override;
 
   const char* SUFFIXES[6] = {
       "_positive_x",

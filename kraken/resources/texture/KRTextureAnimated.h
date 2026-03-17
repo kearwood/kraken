@@ -46,19 +46,19 @@ public:
   virtual bool save(const std::string& path) override;
   virtual bool save(Block& data) override;
 
-  virtual long getMemRequiredForSize(int max_dim) override;
+  virtual long getMemRequiredForLod(int lod) override;
   virtual void requestResidency(float lodCoverage, texture_usage_t textureUsage) override;
 
   virtual long getReferencedMemSize() override;
 
   virtual bool isAnimated() override;
-  virtual void resize(int max_dim) override;
+  virtual void resize(int lod) override;
   virtual int getFaceCount() const override;
   virtual VkFormat getFormat() const override;
   virtual hydra::Vector3i getDimensions() const override;
 
 private:
-  bool createGPUTexture(int lod_max_dim) override;
+  bool createGPUTexture(int lod) override;
 
   float m_frame_rate;
   int m_frame_count;

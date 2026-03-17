@@ -46,24 +46,24 @@ KRTexture2D::~KRTexture2D()
   delete m_pData;
 }
 
-bool KRTexture2D::createGPUTexture(int lod_max_dim)
+bool KRTexture2D::createGPUTexture(int lod)
 {
   if (m_haveNewHandles) {
     return true;
   }
 
   Vector3i dimensions = getDimensions();
-  size_t bufferSize = getMemRequiredForSize(lod_max_dim);
+  size_t bufferSize = getMemRequiredForLod(lod);
   void* buffer = malloc(bufferSize);
 
-  if (!getLodData(buffer, lod_max_dim)) {
+  if (!getLodData(buffer, lod)) {
     delete buffer;
     return false;
   }
 
   bool success = true;
-  int prev_lod_max_dim = m_new_lod_max_dim;
-  m_new_lod_max_dim = 0;
+  int prev_lod = m_new_lod;
+  m_new_lod = -1;
 
   KRDeviceManager* deviceManager = getContext().getDeviceManager();
 
@@ -107,7 +107,7 @@ bool KRTexture2D::createGPUTexture(int lod_max_dim)
   delete buffer;
 
   if (success) {
-    m_new_lod_max_dim = prev_lod_max_dim;
+    m_new_lod = prev_lod;
     m_haveNewHandles = true;
   } else {
     destroyNewHandles();

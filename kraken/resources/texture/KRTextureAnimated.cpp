@@ -51,8 +51,7 @@ KRTextureAnimated::KRTextureAnimated(KRContext& context, std::string name) : KRT
   m_frame_count = atoi(name.substr(first_comma_pos + 1, second_comma_pos - first_comma_pos - 1).c_str());
   m_frame_rate = (float)atof(name.substr(second_comma_pos + 1).c_str());
 
-  m_max_lod_max_dim = 2048;
-  m_min_lod_max_dim = 64;
+  m_lod_count = 0;
   m_dimensions = Vector2i::Create(0, 0);
 
   for (int i = 0; i < m_frame_count; i++) {
@@ -60,8 +59,7 @@ KRTextureAnimated::KRTextureAnimated(KRContext& context, std::string name) : KRT
     if (frame_texture) {
 	  m_dimensions.x = std::max(m_dimensions.x, frame_texture->getDimensions().x);
 	  m_dimensions.y = std::max(m_dimensions.y, frame_texture->getDimensions().y);
-      if (frame_texture->getMaxMipMap() < (int)m_max_lod_max_dim) m_max_lod_max_dim = frame_texture->getMaxMipMap();
-      if (frame_texture->getMinMipMap() > (int)m_min_lod_max_dim) m_min_lod_max_dim = frame_texture->getMinMipMap();
+      m_lod_count = std::max(m_lod_count, frame_texture->getLodCount());
     }
   }
 }
@@ -83,12 +81,12 @@ KRTextureAnimated::~KRTextureAnimated()
 
 }
 
-bool KRTextureAnimated::createGPUTexture(int lod_max_dim)
+bool KRTextureAnimated::createGPUTexture(int lod)
 {
   return true;
 }
 
-long KRTextureAnimated::getMemRequiredForSize(int max_dim)
+long KRTextureAnimated::getMemRequiredForLod(int lod)
 {
   return 0; // Memory is allocated by individual frame textures
 }
@@ -151,7 +149,7 @@ bool KRTextureAnimated::save(Block& data)
   return true; // Animated textures are just references; there are no files to output
 }
 
-void KRTextureAnimated::resize(int max_dim)
+void KRTextureAnimated::resize(int lod)
 {
   // Purposely not calling the superclass method
 }

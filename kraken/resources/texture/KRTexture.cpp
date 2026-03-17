@@ -37,8 +37,8 @@
 
 KRTexture::KRTexture(KRContext& context, std::string name) : KRResource(context, name)
 {
-  m_current_lod_max_dim = 0;
-  m_new_lod_max_dim = 0;
+  m_current_lod = -1;
+  m_new_lod = -1;
   m_textureMemUsed = 0;
   m_newTextureMemUsed = 0;
   m_last_frame_used = 0;
@@ -96,8 +96,8 @@ void KRTexture::releaseHandles()
   destroyNewHandles();
   destroyHandles();
 
-  m_current_lod_max_dim = 0;
-  m_new_lod_max_dim = 0;
+  m_current_lod = -1;
+  m_new_lod = -1;
 
   m_handle_lock.clear();
 
@@ -115,25 +115,24 @@ long KRTexture::getReferencedMemSize()
   return 0;
 }
 
-void KRTexture::resize(int max_dim)
+void KRTexture::resize(int lod)
 {
   while (m_handle_lock.test_and_set()) {
   }; // Spin lock
 
   if (!m_haveNewHandles) {
-    if (max_dim > 0) {
-      int target_dim = max_dim;
-      if (target_dim < (int)m_min_lod_max_dim) target_dim = m_min_lod_max_dim;
+    if (lod != -1) {
+      int target_lod = KRMIN(lod, m_lod_count);
 
-      if (m_new_lod_max_dim != target_dim || m_handles.empty()) {
+      if (m_new_lod != target_lod || m_handles.empty()) {
         assert(m_newTextureMemUsed == 0);
-        m_newTextureMemUsed = getMemRequiredForSize(target_dim);
+        m_newTextureMemUsed = getMemRequiredForLod(target_lod);
 
         getContext().getTextureManager()->memoryChanged(m_newTextureMemUsed);
         getContext().getTextureManager()->addMemoryTransferredThisFrame(m_newTextureMemUsed);
 
-        if (createGPUTexture(target_dim)) {
-          m_new_lod_max_dim = target_dim;
+        if (createGPUTexture(target_lod)) {
+          m_new_lod = target_lod;
         } else {
           getContext().getTextureManager()->memoryChanged(-m_newTextureMemUsed);
           m_newTextureMemUsed = 0;
@@ -168,14 +167,12 @@ void KRTexture::requestResidency(float lodCoverage, KRTexture::texture_usage_t t
 
 kraken_stream_level KRTexture::getStreamLevel()
 {
-  if (m_current_lod_max_dim == 0) {
+  if (m_current_lod == -1) {
     return kraken_stream_level::STREAM_LEVEL_OUT;
-  } else if (m_current_lod_max_dim == KRMIN(getContext().KRENGINE_MAX_TEXTURE_DIM, (int)m_max_lod_max_dim)) {
+  } else if (m_current_lod <= getContext().KRENGINE_TEXTURE_HQ_LOD) {
     return kraken_stream_level::STREAM_LEVEL_IN_HQ;
-  } else if (m_current_lod_max_dim >= KRMAX(getContext().KRENGINE_MIN_TEXTURE_DIM, (int)m_min_lod_max_dim)) {
-    return kraken_stream_level::STREAM_LEVEL_IN_LQ;
   } else {
-    return kraken_stream_level::STREAM_LEVEL_OUT;
+    return kraken_stream_level::STREAM_LEVEL_IN_LQ;
   }
 }
 
@@ -225,29 +222,34 @@ KRTexture* KRTexture::compress(bool premultiply_alpha)
   return NULL;
 }
 
-int KRTexture::getCurrentLodMaxDim()
+int KRTexture::getLodCount() const
 {
-  return m_current_lod_max_dim;
+  return m_lod_count;
 }
 
-int KRTexture::getNewLodMaxDim()
+int KRTexture::getCurrentLodMaxDim()
 {
-  return m_new_lod_max_dim;
+  if (m_current_lod == -1) {
+    return 0;
+  } else {
+    return getMaxMipMap() >> m_current_lod;
+  }
+}
+
+int KRTexture::getNewLod()
+{
+	return m_new_lod;
 }
 
 int KRTexture::getMaxMipMap()
 {
-  return m_max_lod_max_dim;
-}
-
-int KRTexture::getMinMipMap()
-{
-  return m_min_lod_max_dim;
+  hydra::Vector3i size = getDimensions();
+  return std::max(size.x, std::max(size.y, size.z));
 }
 
 bool KRTexture::hasMipmaps()
 {
-  return m_max_lod_max_dim != m_min_lod_max_dim;
+    return m_lod_count > 0;
 }
 
 void KRTexture::_swapHandles()
@@ -259,7 +261,7 @@ void KRTexture::_swapHandles()
       m_handles.swap(m_newHandles);
       m_textureMemUsed = (long)m_newTextureMemUsed;
       m_newTextureMemUsed = 0;
-      m_current_lod_max_dim = m_new_lod_max_dim;
+      m_current_lod = m_new_lod;
       m_haveNewHandles = false;
     }
     m_handle_lock.clear();

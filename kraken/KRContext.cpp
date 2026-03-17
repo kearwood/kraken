@@ -57,7 +57,8 @@ int KRContext::KRENGINE_MAX_PIPELINE_HANDLES = 4000;
 int KRContext::KRENGINE_GPU_MEM_MAX = 256000000;
 int KRContext::KRENGINE_GPU_MEM_TARGET = 192000000;
 int KRContext::KRENGINE_MAX_TEXTURE_DIM = 8192;
-int KRContext::KRENGINE_MIN_TEXTURE_DIM = 64;
+int KRContext::KRENGINE_TEXTURE_HQ_LOD = 0;
+int KRContext::KRENGINE_TEXTURE_LQ_LOD = 4;
 
 // TODO - This should be configured per-scene?  Or auto/dynamic?
 int KRContext::KRENGINE_PRESTREAM_DISTANCE = 1000.0f;

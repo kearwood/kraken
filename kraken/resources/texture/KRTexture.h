@@ -52,8 +52,8 @@ public:
   long getMemSize();
   virtual long getReferencedMemSize();
 
-  virtual long getMemRequiredForSize(int max_dim) = 0;
-  virtual void resize(int max_dim);
+  virtual long getMemRequiredForLod(int lod) = 0;
+  virtual void resize(int lod);
 
   long getLastFrameUsed();
 
@@ -83,13 +83,13 @@ public:
 
   virtual KRTexture* compress(bool premultiply_alpha = false);
   int getCurrentLodMaxDim();
-  int getNewLodMaxDim(); // For use by streamer only
+  int getNewLod(); // For use by streamer only
   int getMaxMipMap();
-  int getMinMipMap();
   bool hasMipmaps();
   virtual int getFaceCount() const = 0;
   virtual VkFormat getFormat() const = 0;
   virtual hydra::Vector3i getDimensions() const = 0;
+  int getLodCount() const;
 
   kraken_stream_level getStreamLevel();
   float getLastFrameLodCoverage() const;
@@ -100,7 +100,7 @@ public:
   VkImage getImage(KrDeviceHandle device);
 
 protected:
-  virtual bool createGPUTexture(int lod_max_dim) = 0;
+  virtual bool createGPUTexture(int lod) = 0;
   void destroyHandles();
   void destroyNewHandles();
 
@@ -120,11 +120,10 @@ protected:
 
   std::atomic_flag m_handle_lock;
 
-  int m_current_lod_max_dim;
-  int m_new_lod_max_dim;
+  int m_current_lod;
+  int m_new_lod;
 
-  uint32_t m_max_lod_max_dim;
-  uint32_t m_min_lod_max_dim;
+  int m_lod_count;
 
   long m_last_frame_used;
   float m_last_frame_max_lod_coverage;

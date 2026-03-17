@@ -302,13 +302,13 @@ void KRTextureManager::balanceTextureMemory(long& memoryRemaining, long& memoryR
 
   for (auto itr = m_activeTextures_streamer.begin(); itr != m_activeTextures_streamer.end(); itr++) {
     KRTexture* texture = (*itr).second;
-    int min_mip_level = KRMAX(getContext().KRENGINE_MIN_TEXTURE_DIM, texture->getMinMipMap());
-    long minLodMem = texture->getMemRequiredForSize(min_mip_level);
+    int min_lod_level = KRMIN(getContext().KRENGINE_TEXTURE_LQ_LOD, texture->getLodCount());
+    long minLodMem = texture->getMemRequiredForLod(min_lod_level);
     memoryRemaining -= minLodMem;
 
-    if (memoryRemainingThisFrame > minLodMem && texture->getNewLodMaxDim() < min_mip_level) {
+    if (memoryRemainingThisFrame > minLodMem && (texture->getNewLod() != -1 || texture->getNewLod() > min_lod_level)) {
       memoryRemainingThisFrame -= minLodMem;
-      texture->resize(min_mip_level);
+      texture->resize(min_lod_level);
     }
   }
 
@@ -331,24 +331,29 @@ void KRTextureManager::balanceTextureMemory(long& memoryRemaining, long& memoryR
     }
 
     KRTexture* texture = (*itr).second;
-    int min_mip_level = KRMAX(getContext().KRENGINE_MIN_TEXTURE_DIM, texture->getMinMipMap());
-    int max_mip_level = KRMIN(getContext().KRENGINE_MAX_TEXTURE_DIM, texture->getMaxMipMap());
-    int target_mip_level = (max_mip_level >> mip_drop);
-    long targetMem = texture->getMemRequiredForSize(target_mip_level);
-    long additionalMemRequired = targetMem - texture->getMemRequiredForSize(min_mip_level);
+    int min_lod_level = KRMIN(getContext().KRENGINE_TEXTURE_LQ_LOD, texture->getLodCount());
+    int target_lod_level = KRMIN(getContext().KRENGINE_TEXTURE_HQ_LOD + mip_drop, texture->getLodCount());
+    long targetMem = texture->getMemRequiredForLod(target_lod_level);
+    long additionalMemRequired = targetMem - texture->getMemRequiredForLod(min_lod_level);
     memoryRemainingThisMip -= additionalMemRequired;
     memoryRemaining -= additionalMemRequired;
     if (memoryRemainingThisMip > 0 && memoryRemainingThisFrame > targetMem) {
-      int current_mip_level = texture->getNewLodMaxDim();
-      if (current_mip_level == (target_mip_level >> 1) || target_mip_level < current_mip_level) {
+      int current_lod_level = texture->getNewLod();
+      if (current_lod_level == (target_lod_level + 1) || target_lod_level > current_lod_level) {
+        // We are are just one lod level away from the target, or we are reducing the quality.
+        // Advance directly to the target level.
         memoryRemainingThisFrame -= targetMem;
-        texture->resize(target_mip_level);
-      } else if (current_mip_level == (target_mip_level >> 2)) {
-        memoryRemainingThisFrame -= texture->getMemRequiredForSize(target_mip_level >> 1);
-        texture->resize(target_mip_level >> 1);
-      } else if (current_mip_level < (target_mip_level >> 2)) {
-        memoryRemainingThisFrame -= texture->getMemRequiredForSize(target_mip_level >> 2);
-        texture->resize(target_mip_level >> 2);
+        texture->resize(target_lod_level);
+      } else if (current_lod_level == (target_lod_level + 2)) {
+        // We are two lod levels away from the target.
+        // Advance to the lod level inbetween.
+        memoryRemainingThisFrame -= texture->getMemRequiredForLod(target_lod_level + 1);
+        texture->resize(target_lod_level + 1);
+      } else if (current_lod_level > (target_lod_level + 2)) {
+        // We are more than two lod levels away from the target.
+        // Advance directly to the lod 2 levels away from the target.
+        memoryRemainingThisFrame -= texture->getMemRequiredForLod(target_lod_level + 2);
+        texture->resize(target_lod_level + 2);
       }
     }
 
