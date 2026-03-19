@@ -53,7 +53,7 @@ bool KRTexture2D::createGPUTexture(int lod)
   }
 
   Vector3i dimensions = getDimensions();
-  size_t bufferSize = getMemRequiredForLod(lod);
+  size_t bufferSize = getMemRequiredForLodRange(lod);
   void* buffer = malloc(bufferSize);
 
   if (!getLodData(buffer, lod)) {
@@ -85,6 +85,9 @@ bool KRTexture2D::createGPUTexture(int lod)
       break;
     }
 
+    int min_mip = KRMIN(target_lod, m_lod_count - 1);
+    int mip_count = m_lod_count - min_mip;
+
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = texture.image;
@@ -92,7 +95,7 @@ bool KRTexture2D::createGPUTexture(int lod)
     viewInfo.format = getFormat();
     viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = KRMAX(m_lod_count - target_lod, 1);
+    viewInfo.subresourceRange.levelCount = mip_count;
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = 1;
     VkResult res = vkCreateImageView(device.m_logicalDevice, &viewInfo, nullptr, &texture.fullImageView);
@@ -101,24 +104,32 @@ bool KRTexture2D::createGPUTexture(int lod)
       break;
     }
 
-    VkBufferImageCopy region{};
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
+	std::vector<VkBufferImageCopy> regions;
+	regions.resize(mip_count, VkBufferImageCopy{});
+    int bufferOffset = 0;
+    for (int mip = min_mip; mip < min_mip + mip_count - 1; mip++) {
+        VkBufferImageCopy& region = regions[mip];
+        region.bufferOffset = bufferOffset;
+        region.bufferRowLength = 0;
+        region.bufferImageHeight = 0;
 
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.mipLevel = mip - min_mip;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
 
-    region.imageOffset = { 0, 0, 0 };
-    region.imageExtent = {
-        (unsigned int)dimensions.x,
-        (unsigned int)dimensions.y,
-        (unsigned int)dimensions.z
-    };
+        region.imageOffset = { 0, 0, 0 };
+        region.imageExtent = {
+            (unsigned int)dimensions.x,
+            (unsigned int)dimensions.y,
+            (unsigned int)dimensions.z
+        };
+		regions.push_back(region);
 
-    device.streamUpload((void*)buffer, bufferSize, texture.image, &region, 1);
+		bufferOffset += getMemRequiredForLod(mip);
+    }
+
+    device.streamUpload((void*)buffer, bufferSize, texture.image, regions.data(), regions.size());
   }
 
   delete buffer;

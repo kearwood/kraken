@@ -126,7 +126,7 @@ void KRTexture::resize(int lod)
 
       if (m_new_lod != target_lod || m_handles.empty()) {
         assert(m_newTextureMemUsed == 0);
-        m_newTextureMemUsed = getMemRequiredForLod(target_lod);
+        m_newTextureMemUsed = getMemRequiredForLodRange(target_lod);
 
         getContext().getTextureManager()->memoryChanged(m_newTextureMemUsed);
         getContext().getTextureManager()->addMemoryTransferredThisFrame(m_newTextureMemUsed);
@@ -294,6 +294,8 @@ bool KRTexture::allocate(KRDevice& device, int target_lod, VkImageCreateFlags im
 #endif
 )
 {
+  int min_mip = KRMIN(target_lod, m_lod_count - 1);
+  int mip_count = m_lod_count - min_mip;
   hydra::Vector3i dimensions = getDimensions() / (1 << target_lod);
 
   VkImageCreateInfo imageInfo{};
@@ -302,7 +304,7 @@ bool KRTexture::allocate(KRDevice& device, int target_lod, VkImageCreateFlags im
   imageInfo.extent.width = static_cast<uint32_t>(dimensions.x);
   imageInfo.extent.height = static_cast<uint32_t>(dimensions.y);
   imageInfo.extent.depth = static_cast<uint32_t>(dimensions.z);
-  imageInfo.mipLevels = KRMAX(m_lod_count - target_lod, 1);
+  imageInfo.mipLevels = mip_count;
   imageInfo.arrayLayers = 1;
   imageInfo.format = getFormat();
   imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -329,4 +331,17 @@ bool KRTexture::allocate(KRDevice& device, int target_lod, VkImageCreateFlags im
   device.setDebugLabel(*image, debug_label);
 #endif
   return true;
+}
+
+long KRTexture::getMemRequiredForLodRange(int min_lod, int max_lod /* = 0xff */)
+{
+  int target_max_lod = KRMIN(max_lod, m_lod_count - 1);
+  int target_min_lod = KRMIN(min_lod, m_lod_count - 1);
+
+  long memRequired = 0;
+  for (int lod = target_min_lod; lod <= target_max_lod; lod++) {
+    memRequired += 
+        (lod);
+  }
+  return memRequired;
 }

@@ -53,6 +53,7 @@ public:
   virtual long getReferencedMemSize();
 
   virtual long getMemRequiredForLod(int lod) = 0;
+  long getMemRequiredForLodRange(int min_lod, int max_lod = 0xff);
   virtual void resize(int lod);
 
   long getLastFrameUsed();

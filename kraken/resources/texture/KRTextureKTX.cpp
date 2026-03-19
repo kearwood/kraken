@@ -82,7 +82,7 @@ KRTextureKTX::KRTextureKTX(KRContext& context, Block* data, std::string name) : 
     }
   }
 
-  m_lod_count = (int)KRMAX(m_header.numberOfMipmapLevels, 1) - 1;
+  m_lod_count = (int)KRMAX(m_header.numberOfMipmapLevels, 1);
 }
 
 KRTextureKTX::KRTextureKTX(KRContext& context, std::string name, unsigned int internal_format, unsigned int base_internal_format, int width, int height, const std::list<Block*>& blocks) : KRTexture2D(context, new Block(), name)
@@ -119,7 +119,7 @@ KRTextureKTX::KRTextureKTX(KRContext& context, std::string name, unsigned int in
 
 KRTextureKTX::~KRTextureKTX()
 {
-  for (std::list<Block*>::iterator itr = m_blocks.begin(); itr != m_blocks.end(); itr++) {
+  for (std::vector<Block*>::iterator itr = m_blocks.begin(); itr != m_blocks.end(); itr++) {
     Block* block = *itr;
     delete block;
   }
@@ -362,74 +362,20 @@ VkFormat KRTextureKTX::getFormat() const
 
 long KRTextureKTX::getMemRequiredForLod(int lod)
 {
-  // Determine how much memory will be consumed
-
-  long memoryRequired = 0;
-
-  int level = 0;
-  for (std::list<Block*>::iterator itr = m_blocks.begin(); itr != m_blocks.end(); itr++) {
-    Block* block = *itr;
-    if (level >= lod) {
-      memoryRequired += (long)block->getSize();
-    }
-
-    level++;
-  }
-
-  return memoryRequired;
+  int target_lod = KRMIN(lod, m_lod_count - 1);
+  return (long)m_blocks[target_lod]->getSize();
 }
 
 bool KRTextureKTX::getLodData(void* buffer, int lod)
 {
-  unsigned char* converted_image = (unsigned char*)buffer;
-  int target_lod = KRMIN(lod, m_lod_count);
-
   if (m_blocks.size() == 0) {
     return false;
   }
 
-  // Determine how much memory will be consumed
-  long memoryRequired = 0;
-  long memoryTransferred = 0;
-
-  // Upload texture data
-  int level = 0;
-  for (std::list<Block*>::iterator itr = m_blocks.begin(); itr != m_blocks.end(); itr++) {
-    Block* block = *itr;
-    if (level >= target_lod) {
-
-      /*
-      if (width > current_lod_max_dim) {
-        current_lod_max_dim = width;
-      }
-      if (height > current_lod_max_dim) {
-        current_lod_max_dim = height;
-      }
-      */
-
-      block->lock();
-      /*
-      * TODO - Vulkan Refactoring
-      GLDEBUG(glCompressedTexImage2D(target, destination_level, (unsigned int)m_header.glInternalFormat, width, height, 0, (int)block->getSize(), block->getStart()));
-      */
-
-      block->unlock();
-      memoryTransferred += (long)block->getSize(); // memoryTransferred does not include throughput of mipmap levels copied through glCopyTextureLevelsAPPLE
-      memoryRequired += (long)block->getSize();
-      //
-      //            err = glGetError();
-      //            if (err != GL_NO_ERROR) {
-      //                assert(false);
-      //                return false;
-      //            }
-      //
-    }
-
-    level++;
-  }
+  int target_lod = KRMIN(lod, m_lod_count - 1);
+  m_blocks[target_lod]->copy(buffer);
 
   return true;
-
 }
 
 std::string KRTextureKTX::getExtension()

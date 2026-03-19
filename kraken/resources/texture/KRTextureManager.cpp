@@ -303,7 +303,7 @@ void KRTextureManager::balanceTextureMemory(long& memoryRemaining, long& memoryR
   for (auto itr = m_activeTextures_streamer.begin(); itr != m_activeTextures_streamer.end(); itr++) {
     KRTexture* texture = (*itr).second;
     int min_lod_level = KRMIN(getContext().KRENGINE_TEXTURE_LQ_LOD, texture->getLodCount());
-    long minLodMem = texture->getMemRequiredForLod(min_lod_level);
+    long minLodMem = texture->getMemRequiredForLodRange(min_lod_level);
     memoryRemaining -= minLodMem;
 
     if (memoryRemainingThisFrame > minLodMem && (texture->getNewLod() != -1 || texture->getNewLod() > min_lod_level)) {
@@ -333,8 +333,8 @@ void KRTextureManager::balanceTextureMemory(long& memoryRemaining, long& memoryR
     KRTexture* texture = (*itr).second;
     int min_lod_level = KRMIN(getContext().KRENGINE_TEXTURE_LQ_LOD, texture->getLodCount());
     int target_lod_level = KRMIN(getContext().KRENGINE_TEXTURE_HQ_LOD + mip_drop, texture->getLodCount());
-    long targetMem = texture->getMemRequiredForLod(target_lod_level);
-    long additionalMemRequired = targetMem - texture->getMemRequiredForLod(min_lod_level);
+    long targetMem = texture->getMemRequiredForLodRange(target_lod_level);
+    long additionalMemRequired = targetMem - texture->getMemRequiredForLodRange(min_lod_level);
     memoryRemainingThisMip -= additionalMemRequired;
     memoryRemaining -= additionalMemRequired;
     if (memoryRemainingThisMip > 0 && memoryRemainingThisFrame > targetMem) {
@@ -347,12 +347,12 @@ void KRTextureManager::balanceTextureMemory(long& memoryRemaining, long& memoryR
       } else if (current_lod_level == (target_lod_level + 2)) {
         // We are two lod levels away from the target.
         // Advance to the lod level inbetween.
-        memoryRemainingThisFrame -= texture->getMemRequiredForLod(target_lod_level + 1);
+        memoryRemainingThisFrame -= texture->getMemRequiredForLodRange(target_lod_level + 1);
         texture->resize(target_lod_level + 1);
       } else if (current_lod_level > (target_lod_level + 2)) {
         // We are more than two lod levels away from the target.
         // Advance directly to the lod 2 levels away from the target.
-        memoryRemainingThisFrame -= texture->getMemRequiredForLod(target_lod_level + 2);
+        memoryRemainingThisFrame -= texture->getMemRequiredForLodRange(target_lod_level + 2);
         texture->resize(target_lod_level + 2);
       }
     }

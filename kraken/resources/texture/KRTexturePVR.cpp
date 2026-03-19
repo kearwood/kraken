@@ -142,7 +142,7 @@ KRTexturePVR::KRTexturePVR(KRContext& context, Block* data, std::string name) : 
 
 KRTexturePVR::~KRTexturePVR()
 {
-  for (std::list<Block*>::iterator itr = m_blocks.begin(); itr != m_blocks.end(); itr++) {
+  for (std::vector<Block*>::iterator itr = m_blocks.begin(); itr != m_blocks.end(); itr++) {
     Block* block = *itr;
     delete block;
   }
@@ -174,64 +174,19 @@ VkFormat KRTexturePVR::getFormat() const
 
 long KRTexturePVR::getMemRequiredForLod(int lod)
 {
-  // Determine how much memory will be consumed
-  long memoryRequired = 0;
-  int level = 0;
-
-  for (std::list<Block*>::iterator itr = m_blocks.begin(); itr != m_blocks.end(); itr++) {
-    Block* block = *itr;
-    if (level >= lod) {
-      memoryRequired += (long)block->getSize();
-    }
-
-    level++;
-  }
-
-  return memoryRequired;
+  int target_lod = KRMIN(lod, m_lod_count - 1);
+  return m_blocks[target_lod]->getSize();
 }
 
 bool KRTexturePVR::getLodData(void* buffer, int lod)
 {
-  int target_lod = KRMIN(lod, m_lod_count);
-
   if (m_blocks.size() == 0) {
     return false;
   }
 
-  // Determine how much memory will be consumed
-  int width = m_iWidth;
-  int height = m_iHeight;
-  long memoryRequired = 0;
-  long memoryTransferred = 0;
-
-  // Upload texture data
-  int level = 0;
-  for (std::list<Block*>::iterator itr = m_blocks.begin(); itr != m_blocks.end(); itr++) {
-    Block* block = *itr;
-    if (level >= target_lod) {
-
-      block->lock();
-      /*
-       * TODO - Vulkan Refactoring
-      GLDEBUG(glCompressedTexImage2D(target, destination_level, m_internalFormat, width, height, 0, (int)block->getSize(), block->getStart()));
-      */
-      block->unlock();
-      memoryTransferred += (long)block->getSize(); // memoryTransferred does not include throughput of mipmap levels copied through glCopyTextureLevelsAPPLE
-      memoryRequired += (long)block->getSize();
-      //            
-      //            err = glGetError();
-      //            if (err != GL_NO_ERROR) {
-      //                assert(false);
-      //                return false;
-      //            }
-      //
-    }
-
-    level++;
-  }
-
+  int target_lod = KRMIN(lod, m_lod_count - 1);
+  m_blocks[target_lod]->copy(buffer);
   return true;
-
 }
 
 std::string KRTexturePVR::getExtension()

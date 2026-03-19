@@ -77,7 +77,7 @@ KRTexturePNG::KRTexturePNG(KRContext& context, Block* data, std::string name) : 
 
   m_dimensions.x = SWAP_4(pHeader->chunk_IHDR.width);
   m_dimensions.y = SWAP_4(pHeader->chunk_IHDR.height);
-  m_lod_count = 0; // Mipmaps not yet supported for PNG images
+  m_lod_count = 1; // Mipmaps not yet supported for PNG images
   switch (pHeader->chunk_IHDR.colorType) {
   case 0:
       // greyscale

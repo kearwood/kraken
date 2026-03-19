@@ -54,5 +54,5 @@ protected:
   unsigned int    m_internalFormat;
   bool      m_bHasAlpha;
 
-  std::list<mimir::Block*> m_blocks;
+  std::vector<mimir::Block*> m_blocks;
 };

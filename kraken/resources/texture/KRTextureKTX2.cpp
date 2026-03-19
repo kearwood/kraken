@@ -68,7 +68,7 @@ KRTextureKTX2::KRTextureKTX2(KRContext& context, Block* data, std::string name) 
   if (height < 1) {
     height = 1;
   }
-  m_lod_count = (int)KRMAX(m_header.levelCount, 1) - 1;
+  m_lod_count = (int)KRMAX(m_header.levelCount, 1);
 }
 
 KRTextureKTX2::~KRTextureKTX2()
@@ -82,63 +82,26 @@ Vector3i KRTextureKTX2::getDimensions() const
 
 long KRTextureKTX2::getMemRequiredForLod(int lod)
 {
-  int target_lod = KRMIN(lod, m_lod_count);
+  int target_lod = KRMIN(lod, m_lod_count - 1);
 
-  // Determine how much memory will be consumed
-  long memoryRequired = 0;
+  KTX2LevelIndex levelIndex;
+  m_pData->copy(&levelIndex, sizeof(m_header) + sizeof(KTX2LevelIndex) * target_lod, sizeof(KTX2LevelIndex));
 
-  int level = 0;
-  for (__uint32_t level = 0; level < m_header.levelCount; level++) {
-    KTX2LevelIndex levelIndex;
-    m_pData->copy(&levelIndex, sizeof(m_header) + sizeof(KTX2LevelIndex) * level, sizeof(KTX2LevelIndex));
-    if (level >= target_lod) {
-      memoryRequired += (long)levelIndex.byteLength;
-    }
-    level++;
-  }
-
-  return memoryRequired;
+  return (long)levelIndex.byteLength;
 }
 
 bool KRTextureKTX2::getLodData(void* buffer, int lod)
 {
   unsigned char* converted_image = (unsigned char*)buffer;
-  int target_lod = KRMIN(lod, m_lod_count);
+  int target_lod = KRMIN(lod, m_lod_count - 1);
 
-  // Determine how much memory will be consumed
-  long memoryRequired = 0;
-  long memoryTransferred = 0;
+  KTX2LevelIndex levelIndex;
+  m_pData->copy(&levelIndex, sizeof(m_header) + sizeof(KTX2LevelIndex) * target_lod, sizeof(KTX2LevelIndex));
 
-  int level = 0;
-
-  for (__uint32_t level = 0; level < m_header.levelCount; level++) {
-    KTX2LevelIndex levelIndex;
-    m_pData->copy(&levelIndex, sizeof(m_header) + sizeof(KTX2LevelIndex) * level, sizeof(KTX2LevelIndex));
-
-    if (level >= target_lod) {
-
-      /*
-      * TODO - Vulkan Refactoring
-      GLDEBUG(glCompressedTexImage2D(target, destination_level, (unsigned int)m_header.glInternalFormat, width, height, 0, (int)block->getSize(), block->getStart()));
-      */
-
-      memoryTransferred += (long)levelIndex.byteLength; // memoryTransferred does not include throughput of mipmap levels copied through glCopyTextureLevelsAPPLE
-      memoryRequired += (long)levelIndex.byteLength;
-      //
-      //            err = glGetError();
-      //            if (err != GL_NO_ERROR) {
-      //                assert(false);
-      //                return false;
-      //            }
-      //
-
-    }
-
-    level++;
-  }
+  // TODO - Implement copy of buffer data
+  assert(false);
 
   return true;
-
 }
 
 std::string KRTextureKTX2::getExtension()

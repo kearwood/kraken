@@ -52,7 +52,7 @@ public:
 
 protected:
 
-  std::list<Block*> m_blocks;
+  std::vector<Block*> m_blocks;
 
   typedef struct _KTXHeader
   {

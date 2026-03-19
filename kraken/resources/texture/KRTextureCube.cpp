@@ -93,7 +93,7 @@ bool KRTextureCube::createGPUTexture(int lod)
   size_t bufferSizes[6] = {};
   void* buffers[6] = {};
   for (int i = 0; i < 6; i++) {
-      bufferSizes[i] = getMemRequiredForLod(lod);
+      bufferSizes[i] = getMemRequiredForLodRange(lod);
       buffers[i] = malloc(bufferSizes[i]);
 	  m_textures[i]->getLodData(buffers[i], lod);
   }
@@ -169,7 +169,6 @@ long KRTextureCube::getMemRequiredForLod(int lod)
   }
   return memoryRequired;
 }
-
 
 void KRTextureCube::requestResidency(float lodCoverage, texture_usage_t textureUsage)
 {
