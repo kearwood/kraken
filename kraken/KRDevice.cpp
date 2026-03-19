@@ -788,15 +788,6 @@ void KRDevice::streamUpload(void* data, size_t size, Vector3i dimensions, VkImag
   streamUploadImpl(size, dimensions, destination, 0, 1);
 }
 
-void KRDevice::streamUpload(Block& data, VkImage destination, size_t offset, size_t size, Vector3i dimensions, uint32_t baseMipLevel, uint32_t levelCount)
-{
-  checkFlushStreamBuffer(size);
-
-  data.copy((uint8_t*)m_streamingStagingBuffer.data + m_streamingStagingBuffer.usage, offset, size);
-
-  streamUploadImpl(size, dimensions, destination, 0, 1);
-}
-
 void KRDevice::streamUploadImpl(size_t size, Vector3i dimensions, VkImage destination, uint32_t baseMipLevel, uint32_t levelCount)
 {
   // TODO - Refactor memory barriers into helper functions
@@ -812,9 +803,9 @@ void KRDevice::streamUploadImpl(size_t size, Vector3i dimensions, VkImage destin
   barrier.image = destination;
   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   barrier.subresourceRange.baseMipLevel = 0;
-  barrier.subresourceRange.levelCount = 1;
+  barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
   barrier.subresourceRange.baseArrayLayer = 0;
-  barrier.subresourceRange.layerCount = 1;
+  barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
   // For VK_IMAGE_LAYOUT_UNDEFINED -> VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
   barrier.srcAccessMask = 0;

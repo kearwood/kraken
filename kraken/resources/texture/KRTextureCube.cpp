@@ -61,7 +61,7 @@ bool KRTextureCube::createGPUTexture(int lod)
 
   bool success = true;
 
-  int prev_lod = m_new_lod;
+  int target_lod = m_new_lod;
   m_new_lod = -1;
   bool bMipMaps = false;
 
@@ -109,7 +109,7 @@ bool KRTextureCube::createGPUTexture(int lod)
     texture.allocation = VK_NULL_HANDLE;
     texture.image = VK_NULL_HANDLE;
 
-    if (!allocate(device, Vector3i::Create(dimensions.x, dimensions.y, 1), VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texture.image, &texture.allocation
+    if (!allocate(device, target_lod, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texture.image, &texture.allocation
 #if KRENGINE_DEBUG_GPU_LABELS
       , getName().c_str()
 #endif
@@ -130,7 +130,7 @@ bool KRTextureCube::createGPUTexture(int lod)
     m_haveNewHandles = true;
   } else {
     destroyHandles();
-    m_new_lod = prev_lod;
+    m_new_lod = target_lod;
   }
 
   for (int i = 0; i < 6; i++) {

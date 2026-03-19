@@ -62,7 +62,7 @@ bool KRTexture2D::createGPUTexture(int lod)
   }
 
   bool success = true;
-  int prev_lod = m_new_lod;
+  int target_lod = m_new_lod;
   m_new_lod = -1;
 
   KRDeviceManager* deviceManager = getContext().getDeviceManager();
@@ -76,7 +76,7 @@ bool KRTexture2D::createGPUTexture(int lod)
     texture.allocation = VK_NULL_HANDLE;
     texture.image = VK_NULL_HANDLE;
 
-    if (!allocate(device, getDimensions(), 0, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texture.image, &texture.allocation
+    if (!allocate(device, target_lod, 0, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texture.image, &texture.allocation
 #if KRENGINE_DEBUG_GPU_LABELS
       , getName().c_str()
 #endif
@@ -92,7 +92,7 @@ bool KRTexture2D::createGPUTexture(int lod)
     viewInfo.format = getFormat();
     viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.levelCount = KRMAX(m_lod_count - target_lod, 1);
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = 1;
     VkResult res = vkCreateImageView(device.m_logicalDevice, &viewInfo, nullptr, &texture.fullImageView);
@@ -107,7 +107,7 @@ bool KRTexture2D::createGPUTexture(int lod)
   delete buffer;
 
   if (success) {
-    m_new_lod = prev_lod;
+    m_new_lod = target_lod;
     m_haveNewHandles = true;
   } else {
     destroyNewHandles();

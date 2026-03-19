@@ -288,21 +288,23 @@ VkImage KRTexture::getImage(KrDeviceHandle device)
   return VK_NULL_HANDLE;
 }
 
-bool KRTexture::allocate(KRDevice& device, hydra::Vector3i dimensions, VkImageCreateFlags imageCreateFlags, VkMemoryPropertyFlags properties, VkImage* image, VmaAllocation* allocation
+bool KRTexture::allocate(KRDevice& device, int target_lod, VkImageCreateFlags imageCreateFlags, VkMemoryPropertyFlags properties, VkImage* image, VmaAllocation* allocation
 #if KRENGINE_DEBUG_GPU_LABELS  
 , const char* debug_label
 #endif
 )
 {
+  hydra::Vector3i dimensions = getDimensions() / (1 << target_lod);
+
   VkImageCreateInfo imageInfo{};
   imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   imageInfo.imageType = VK_IMAGE_TYPE_2D;
   imageInfo.extent.width = static_cast<uint32_t>(dimensions.x);
   imageInfo.extent.height = static_cast<uint32_t>(dimensions.y);
   imageInfo.extent.depth = static_cast<uint32_t>(dimensions.z);
-  imageInfo.mipLevels = 1;
+  imageInfo.mipLevels = KRMAX(m_lod_count - target_lod, 1);
   imageInfo.arrayLayers = 1;
-  imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+  imageInfo.format = getFormat();
   imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
   imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
