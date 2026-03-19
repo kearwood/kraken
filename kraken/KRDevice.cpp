@@ -779,16 +779,16 @@ void KRDevice::graphicsUpload(VkCommandBuffer& commandBuffer, void* data, size_t
   m_graphicsStagingBuffer.usage += size;
 }
 
-void KRDevice::streamUpload(void* data, size_t size, Vector3i dimensions, VkImage destination)
+void KRDevice::streamUpload(void* data, size_t size, VkImage destination, VkBufferImageCopy* regions, int regionCount)
 {
   checkFlushStreamBuffer(size);
 
   memcpy((uint8_t*)m_streamingStagingBuffer.data + m_streamingStagingBuffer.usage, data, size);
   
-  streamUploadImpl(size, dimensions, destination, 0, 1);
+  streamUploadImpl(size, destination, regions, regionCount);
 }
 
-void KRDevice::streamUploadImpl(size_t size, Vector3i dimensions, VkImage destination, uint32_t baseMipLevel, uint32_t levelCount)
+void KRDevice::streamUploadImpl(size_t size, VkImage destination, VkBufferImageCopy* regions, int regionCount)
 {
   // TODO - Refactor memory barriers into helper functions
   VkPipelineStageFlags sourceStage;
@@ -822,30 +822,13 @@ void KRDevice::streamUploadImpl(size_t size, Vector3i dimensions, VkImage destin
     1, &barrier
   );
 
-  VkBufferImageCopy region{};
-  region.bufferOffset = 0;
-  region.bufferRowLength = 0;
-  region.bufferImageHeight = 0;
-
-  region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  region.imageSubresource.mipLevel = 0;
-  region.imageSubresource.baseArrayLayer = 0;
-  region.imageSubresource.layerCount = 1;
-
-  region.imageOffset = { 0, 0, 0 };
-  region.imageExtent = {
-      (unsigned int)dimensions.x,
-      (unsigned int)dimensions.y,
-      1
-  };
-
   vkCmdCopyBufferToImage(
     m_transferCommandBuffers[0],
     m_streamingStagingBuffer.buffer,
     destination,
     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-    1,
-    &region
+    regionCount,
+    regions
   );
 
   barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;

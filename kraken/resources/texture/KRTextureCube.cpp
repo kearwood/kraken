@@ -121,8 +121,25 @@ bool KRTextureCube::createGPUTexture(int lod)
     for (int i = 0; i < 6; i++) {
       std::string faceName = getName() + SUFFIXES[i];
       if (m_textures[i]) {
-        // TODO - Vulkan refactoring.  We need to create a cube map texture rather than individual 2d textures.
-          device.streamUpload(buffers[i], bufferSizes[i], Vector3i::Create(dimensions.x, dimensions.y, 1), texture.image);
+          VkBufferImageCopy region{};
+          region.bufferOffset = 0;
+          region.bufferRowLength = 0;
+          region.bufferImageHeight = 0;
+
+          region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+          region.imageSubresource.mipLevel = 0;
+          region.imageSubresource.baseArrayLayer = 0;
+          region.imageSubresource.layerCount = 1;
+
+          region.imageOffset = { 0, 0, 0 };
+          region.imageExtent = {
+              (unsigned int)dimensions.x,
+              (unsigned int)dimensions.y,
+              (unsigned int)1
+          };
+
+          // TODO - Vulkan refactoring.  We need to create a cube map texture rather than individual 2d textures.
+          device.streamUpload(buffers[i], bufferSizes[i], texture.image, &region, 1);
       }
     }
   }
