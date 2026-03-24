@@ -240,6 +240,7 @@ public:
 
   virtual void preStream(const KRViewport& viewport, std::list<KRResourceRequest>& resourceRequests);
   virtual void getResourceBindings(std::list<KRResourceBinding*>& bindings);
+  virtual bool alwaysStreamResources();
   virtual void render(RenderInfo& ri);
 
   virtual void physicsUpdate(float deltaTime);

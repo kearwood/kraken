@@ -53,5 +53,5 @@ public:
 protected:
   mimir::Block* m_pData;
 
-  bool createGPUTexture(int lod) override;
+  bool createGPUTexture(int targetLod) override;
 };

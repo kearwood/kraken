@@ -108,6 +108,7 @@ private:
   std::set<KRReverbZone*> m_reverbZoneNodes;
   std::set<KRLocator*> m_locatorNodes;
   std::set<KRLight*> m_lights;
+  std::set<KRNode*> m_alwaysStreamedNodes;
 
   KROctree m_nodeTree;
 

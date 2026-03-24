@@ -671,6 +671,11 @@ void KRNode::getResourceBindings(std::list<KRResourceBinding*>& bindings)
 
 }
 
+bool KRNode::alwaysStreamResources()
+{
+  return false;
+}
+
 void KRNode::render(RenderInfo& ri)
 {
   m_lastRenderFrame = getContext().getCurrentFrame();

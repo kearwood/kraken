@@ -122,7 +122,7 @@ void KRTexture::resize(int lod)
 
   if (!m_haveNewHandles) {
     if (lod != -1) {
-      int target_lod = KRMIN(lod, m_lod_count);
+      int target_lod = KRMIN(lod, m_lod_count - 1);
 
       if (m_new_lod != target_lod || m_handles.empty()) {
         assert(m_newTextureMemUsed == 0);
@@ -340,8 +340,7 @@ long KRTexture::getMemRequiredForLodRange(int min_lod, int max_lod /* = 0xff */)
 
   long memRequired = 0;
   for (int lod = target_min_lod; lod <= target_max_lod; lod++) {
-    memRequired += 
-        (lod);
+    memRequired += getMemRequiredForLod(lod);
   }
   return memRequired;
 }

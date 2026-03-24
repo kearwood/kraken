@@ -479,6 +479,22 @@ void KRCamera::renderPost(RenderInfo& ri)
 void KRCamera::renderDebug(RenderInfo& ri)
 {
   const char* szText = settings.m_debug_text.c_str();
+  if (*szText == '\0') {
+    if (m_debug_text_vertices.getSize() > 0) {
+      m_debug_text_vertices = Block();
+    }
+    return;
+  }
+
+  if (!m_fontTexture.isBound())
+  {
+    return;
+  }
+
+  KRTexture* fontTexture = m_fontTexture.get();
+  if (fontTexture->getStreamLevel() == kraken_stream_level::STREAM_LEVEL_OUT) {
+    return;
+  }
 
   std::string debug_text;
   if (settings.debug_display != KRRenderSettings::KRENGINE_DEBUG_DISPLAY_NONE) {
@@ -488,151 +504,140 @@ void KRCamera::renderDebug(RenderInfo& ri)
     }
   }
 
-  if (*szText) {
-    int row_count = 1;
-    const int MAX_TABS = 5;
-    const int TAB_EXTRA = 2;
-    int tab_cols[MAX_TABS] = { 0, 0, 0, 0, 0 };
-    int iCol = 0;
-    int iTab = 0;
-    const char* pChar = szText;
-    while (*pChar) {
-      char c = *pChar++;
-      if (c == '\n') {
-        row_count++;
-        iCol = 0;
-        iTab = 0;
-      } else if (c == '\t') {
-        iCol = 0;
-        iTab++;
-      } else {
-        iCol++;
-        if (iCol > tab_cols[iTab]) tab_cols[iTab] = iCol;
-      }
-    }
-
-    iCol = 0;
-    for (iTab = 0; iTab < MAX_TABS; iTab++) {
-      iCol += tab_cols[iTab] + TAB_EXTRA;
-      tab_cols[iTab] = iCol;
-    }
-
-    const int DEBUG_TEXT_COLUMNS = 256;
-    const int DEBUG_TEXT_ROWS = 128;
-
-    if (m_debug_text_vertices.getSize() == 0) {
-      m_debug_text_vertices.expand(sizeof(DebugTextVertexData) * DEBUG_TEXT_COLUMNS * DEBUG_TEXT_ROWS * 6);
-    }
-    int vertex_count = 0;
-
-    m_debug_text_vertices.lock();
-    DebugTextVertexData* vertex_data = (DebugTextVertexData*)m_debug_text_vertices.getStart();
-
-    pChar = szText;
-    float dScaleX = 2.0f / (1024.0f / 16.0f);
-    float dScaleY = 2.0f / (768.0f / 16.0f);
-    float dTexScale = 1.0f / 16.0f;
-    int iRow = row_count - 1; iCol = 0; iTab = 0;
-    while (*pChar) {
-      char c = *pChar++;
-      if (c == '\n') {
-        iCol = 0;
-        iTab = 0;
-        iRow--;
-      } else if (c == '\t') {
-        iCol = tab_cols[iTab++];
-      } else {
-        if (iCol < DEBUG_TEXT_COLUMNS && iRow < DEBUG_TEXT_ROWS) {
-          int iChar = c - '\0';
-          int iTexCol = iChar % 16;
-          int iTexRow = 15 - (iChar - iTexCol) / 16;
-
-          Vector2 top_left_pos = Vector2::Create(-1.0f + dScaleX * iCol, dScaleY * iRow - 1.0f);
-          Vector2 bottom_right_pos = Vector2::Create(-1.0f + dScaleX * (iCol + 1), dScaleY * iRow + dScaleY - 1.0f);
-          top_left_pos += Vector2::Create(1.0f / 2048.0f * 0.5f, 1.0f / 1536.0f * 0.5f);
-          bottom_right_pos += Vector2::Create(1.0f / 2048.0f * 0.5f, 1.0f / 1536.0f * 0.5f);
-          Vector2 top_left_uv = Vector2::Create(dTexScale * iTexCol, dTexScale * iTexRow + dTexScale);
-          Vector2 bottom_right_uv = Vector2::Create(dTexScale * iTexCol + dTexScale, dTexScale * iTexRow);
-
-          vertex_data[vertex_count].x = top_left_pos.x;
-          vertex_data[vertex_count].y = top_left_pos.y;
-          vertex_data[vertex_count].z = 0.0f;
-          vertex_data[vertex_count].u = top_left_uv.x;
-          vertex_data[vertex_count].v = top_left_uv.y;
-          vertex_count++;
-
-          vertex_data[vertex_count].x = bottom_right_pos.x;
-          vertex_data[vertex_count].y = bottom_right_pos.y;
-          vertex_data[vertex_count].z = 0.0f;
-          vertex_data[vertex_count].u = bottom_right_uv.x;
-          vertex_data[vertex_count].v = bottom_right_uv.y;
-          vertex_count++;
-
-          vertex_data[vertex_count].x = top_left_pos.x;
-          vertex_data[vertex_count].y = bottom_right_pos.y;
-          vertex_data[vertex_count].z = 0.0f;
-          vertex_data[vertex_count].u = top_left_uv.x;
-          vertex_data[vertex_count].v = bottom_right_uv.y;
-          vertex_count++;
-
-
-          vertex_data[vertex_count].x = top_left_pos.x;
-          vertex_data[vertex_count].y = top_left_pos.y;
-          vertex_data[vertex_count].z = 0.0f;
-          vertex_data[vertex_count].u = top_left_uv.x;
-          vertex_data[vertex_count].v = top_left_uv.y;
-          vertex_count++;
-
-          vertex_data[vertex_count].x = bottom_right_pos.x;
-          vertex_data[vertex_count].y = top_left_pos.y;
-          vertex_data[vertex_count].z = 0.0f;
-          vertex_data[vertex_count].u = bottom_right_uv.x;
-          vertex_data[vertex_count].v = top_left_uv.y;
-          vertex_count++;
-
-          vertex_data[vertex_count].x = bottom_right_pos.x;
-          vertex_data[vertex_count].y = bottom_right_pos.y;
-          vertex_data[vertex_count].z = 0.0f;
-          vertex_data[vertex_count].u = bottom_right_uv.x;
-          vertex_data[vertex_count].v = bottom_right_uv.y;
-          vertex_count++;
-        }
-
-        iCol++;
-      }
-    }
-    
-    m_debug_text_vbo_data.load(ri.commandBuffer);
-
-    KRTexture* fontTexture = m_fontTexture.get();
-    if (fontTexture->getStreamLevel() != kraken_stream_level::STREAM_LEVEL_OUT) {
-      
-      PipelineInfo info{};
-      std::string shader_name("debug_font");
-      info.shader_name = &shader_name;
-      info.pCamera = this;
-      info.renderPass = ri.renderPass;
-      info.rasterMode = RasterMode::kAlphaBlendNoTest;
-      info.cullMode = CullMode::kCullNone;
-      info.vertexAttributes = (1 << KRMesh::KRENGINE_ATTRIB_VERTEX) | (1 << KRMesh::KRENGINE_ATTRIB_TEXUVA);
-      info.modelFormat = ModelFormat::KRENGINE_MODEL_FORMAT_TRIANGLES;
-      KRPipeline* fontShader = m_pContext->getPipelineManager()->getPipeline(*ri.surface, info);
-      
-      fontShader->setImageBinding("fontTexture", fontTexture, getContext().getSamplerManager()->DEFAULT_CLAMPED_SAMPLER);
-      fontShader->bind(ri, Matrix4());
-      
-      m_debug_text_vbo_data.bind(ri.commandBuffer);
-      
-      vkCmdDraw(ri.commandBuffer, vertex_count, 1, 0, 0);
-    }
-
-    m_debug_text_vertices.unlock();
-
-  } else {
-    if (m_debug_text_vertices.getSize() > 0) {
-      m_debug_text_vertices = Block();
+  int row_count = 1;
+  const int MAX_TABS = 5;
+  const int TAB_EXTRA = 2;
+  int tab_cols[MAX_TABS] = { 0, 0, 0, 0, 0 };
+  int iCol = 0;
+  int iTab = 0;
+  const char* pChar = szText;
+  while (*pChar) {
+    char c = *pChar++;
+    if (c == '\n') {
+      row_count++;
+      iCol = 0;
+      iTab = 0;
+    } else if (c == '\t') {
+      iCol = 0;
+      iTab++;
+    } else {
+      iCol++;
+      if (iCol > tab_cols[iTab]) tab_cols[iTab] = iCol;
     }
   }
+
+  iCol = 0;
+  for (iTab = 0; iTab < MAX_TABS; iTab++) {
+    iCol += tab_cols[iTab] + TAB_EXTRA;
+    tab_cols[iTab] = iCol;
+  }
+
+  const int DEBUG_TEXT_COLUMNS = 256;
+  const int DEBUG_TEXT_ROWS = 128;
+
+  if (m_debug_text_vertices.getSize() == 0) {
+    m_debug_text_vertices.expand(sizeof(DebugTextVertexData) * DEBUG_TEXT_COLUMNS * DEBUG_TEXT_ROWS * 6);
+  }
+  int vertex_count = 0;
+
+  m_debug_text_vertices.lock();
+  DebugTextVertexData* vertex_data = (DebugTextVertexData*)m_debug_text_vertices.getStart();
+
+  pChar = szText;
+  float dScaleX = 2.0f / (1024.0f / 16.0f);
+  float dScaleY = 2.0f / (768.0f / 16.0f);
+  float dTexScale = 1.0f / 16.0f;
+  int iRow = row_count - 1; iCol = 0; iTab = 0;
+  while (*pChar) {
+    char c = *pChar++;
+    if (c == '\n') {
+      iCol = 0;
+      iTab = 0;
+      iRow--;
+    } else if (c == '\t') {
+      iCol = tab_cols[iTab++];
+    } else {
+      if (iCol < DEBUG_TEXT_COLUMNS && iRow < DEBUG_TEXT_ROWS) {
+        int iChar = c - '\0';
+        int iTexCol = iChar % 16;
+        int iTexRow = 15 - (iChar - iTexCol) / 16;
+
+        Vector2 top_left_pos = Vector2::Create(-1.0f + dScaleX * iCol, dScaleY * iRow - 1.0f);
+        Vector2 bottom_right_pos = Vector2::Create(-1.0f + dScaleX * (iCol + 1), dScaleY * iRow + dScaleY - 1.0f);
+        top_left_pos += Vector2::Create(1.0f / 2048.0f * 0.5f, 1.0f / 1536.0f * 0.5f);
+        bottom_right_pos += Vector2::Create(1.0f / 2048.0f * 0.5f, 1.0f / 1536.0f * 0.5f);
+        Vector2 top_left_uv = Vector2::Create(dTexScale * iTexCol, dTexScale * iTexRow + dTexScale);
+        Vector2 bottom_right_uv = Vector2::Create(dTexScale * iTexCol + dTexScale, dTexScale * iTexRow);
+
+        vertex_data[vertex_count].x = top_left_pos.x;
+        vertex_data[vertex_count].y = top_left_pos.y;
+        vertex_data[vertex_count].z = 0.0f;
+        vertex_data[vertex_count].u = top_left_uv.x;
+        vertex_data[vertex_count].v = top_left_uv.y;
+        vertex_count++;
+
+        vertex_data[vertex_count].x = bottom_right_pos.x;
+        vertex_data[vertex_count].y = bottom_right_pos.y;
+        vertex_data[vertex_count].z = 0.0f;
+        vertex_data[vertex_count].u = bottom_right_uv.x;
+        vertex_data[vertex_count].v = bottom_right_uv.y;
+        vertex_count++;
+
+        vertex_data[vertex_count].x = top_left_pos.x;
+        vertex_data[vertex_count].y = bottom_right_pos.y;
+        vertex_data[vertex_count].z = 0.0f;
+        vertex_data[vertex_count].u = top_left_uv.x;
+        vertex_data[vertex_count].v = bottom_right_uv.y;
+        vertex_count++;
+
+
+        vertex_data[vertex_count].x = top_left_pos.x;
+        vertex_data[vertex_count].y = top_left_pos.y;
+        vertex_data[vertex_count].z = 0.0f;
+        vertex_data[vertex_count].u = top_left_uv.x;
+        vertex_data[vertex_count].v = top_left_uv.y;
+        vertex_count++;
+
+        vertex_data[vertex_count].x = bottom_right_pos.x;
+        vertex_data[vertex_count].y = top_left_pos.y;
+        vertex_data[vertex_count].z = 0.0f;
+        vertex_data[vertex_count].u = bottom_right_uv.x;
+        vertex_data[vertex_count].v = top_left_uv.y;
+        vertex_count++;
+
+        vertex_data[vertex_count].x = bottom_right_pos.x;
+        vertex_data[vertex_count].y = bottom_right_pos.y;
+        vertex_data[vertex_count].z = 0.0f;
+        vertex_data[vertex_count].u = bottom_right_uv.x;
+        vertex_data[vertex_count].v = bottom_right_uv.y;
+        vertex_count++;
+      }
+
+      iCol++;
+    }
+  }
+    
+  m_debug_text_vbo_data.load(ri.commandBuffer);
+
+  PipelineInfo info{};
+  std::string shader_name("debug_font");
+  info.shader_name = &shader_name;
+  info.pCamera = this;
+  info.renderPass = ri.renderPass;
+  info.rasterMode = RasterMode::kAlphaBlendNoTest;
+  info.cullMode = CullMode::kCullNone;
+  info.vertexAttributes = (1 << KRMesh::KRENGINE_ATTRIB_VERTEX) | (1 << KRMesh::KRENGINE_ATTRIB_TEXUVA);
+  info.modelFormat = ModelFormat::KRENGINE_MODEL_FORMAT_TRIANGLES;
+  KRPipeline* fontShader = m_pContext->getPipelineManager()->getPipeline(*ri.surface, info);
+      
+  fontShader->setImageBinding("fontTexture", fontTexture, getContext().getSamplerManager()->DEFAULT_CLAMPED_SAMPLER);
+  fontShader->bind(ri, Matrix4());
+      
+  m_debug_text_vbo_data.bind(ri.commandBuffer);
+      
+  vkCmdDraw(ri.commandBuffer, vertex_count, 1, 0, 0);
+
+  m_debug_text_vertices.unlock();
 }
 
 
@@ -852,4 +857,9 @@ bool KRCamera::getShaderValue(ShaderValue value, hydra::Vector4* output) const
   }
 
   return KRNode::getShaderValue(value, output);
+}
+
+bool KRCamera::alwaysStreamResources()
+{
+  return true;
 }

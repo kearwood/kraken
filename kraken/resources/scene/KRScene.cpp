@@ -145,6 +145,12 @@ void KRScene::render(KRNode::RenderInfo& ri)
     }
   }
 
+  // Stream assets for nodes that request having their assets always streamed in.
+  for (std::set<KRNode*>::iterator itr = m_alwaysStreamedNodes.begin(); itr != m_alwaysStreamedNodes.end(); itr++) {
+    KRNode* node = (*itr);
+    node->preStream(*ri.viewport, resourceRequests);
+  }
+
   std::vector<KROctreeNode*> remainingOctrees;
   if (m_nodeTree.getRootNode() != NULL) {
     remainingOctrees.push_back(m_nodeTree.getRootNode());
@@ -204,16 +210,17 @@ void KRScene::render(KRNode::RenderInfo& ri, std::list<KRResourceRequest>& resou
 
       // Render objects that are at this octree level
       for (std::set<KRNode*>::iterator itr = pOctreeNode->getSceneNodes().begin(); itr != pOctreeNode->getSceneNodes().end(); itr++) {
+        KRNode* node = (*itr);
         //assert(pOctreeNode->getBounds().contains((*itr)->getBounds()));  // Sanity check
         if (ri.renderPass->getType() == RenderPassType::RENDER_PASS_PRESTREAM) {
-          if ((*itr)->getLODVisibility() >= KRNode::LOD_VISIBILITY_PRESTREAM) {
-            (*itr)->preStream(*ri.viewport, resourceRequests);
+          if (node->getLODVisibility() >= KRNode::LOD_VISIBILITY_PRESTREAM) {
+            node->preStream(*ri.viewport, resourceRequests);
           }
         } else {
-          if ((*itr)->getLODVisibility() > KRNode::LOD_VISIBILITY_PRESTREAM)
+          if (node->getLODVisibility() > KRNode::LOD_VISIBILITY_PRESTREAM)
           {
             ri.reflectedObjects.push_back(*itr);
-            (*itr)->render(ri);
+            node->render(ri);
             ri.reflectedObjects.pop_back();
           }
         }
@@ -313,6 +320,9 @@ void KRScene::notify_sceneGraphDelete(KRNode* pNode)
 {
   m_nodeTree.remove(pNode);
   m_physicsNodes.erase(pNode);
+  if (pNode->alwaysStreamResources()) {
+    m_alwaysStreamedNodes.erase(pNode);
+  }
   KRAmbientZone* AmbientZoneNode = dynamic_cast<KRAmbientZone*>(pNode);
   if (AmbientZoneNode) {
     m_ambientZoneNodes.erase(AmbientZoneNode);
@@ -351,6 +361,9 @@ void KRScene::updateOctree(const KRViewport& viewport)
     if (node->hasPhysics()) {
       m_physicsNodes.insert(node);
     }
+    if (node->alwaysStreamResources()) {
+      m_alwaysStreamedNodes.insert(node);
+    }
     KRAmbientZone* ambientZoneNode = dynamic_cast<KRAmbientZone*>(node);
     if (ambientZoneNode) {
       m_ambientZoneNodes.insert(ambientZoneNode);
@@ -377,6 +390,12 @@ void KRScene::updateOctree(const KRViewport& viewport)
       m_physicsNodes.insert(node);
     } else if (!node->hasPhysics()) {
       m_physicsNodes.erase(node);
+    }
+
+    if (node->alwaysStreamResources()) {
+      m_alwaysStreamedNodes.insert(node);
+    } else {
+      m_alwaysStreamedNodes.erase(node);
     }
   }
 }

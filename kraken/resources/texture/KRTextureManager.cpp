@@ -302,7 +302,7 @@ void KRTextureManager::balanceTextureMemory(long& memoryRemaining, long& memoryR
 
   for (auto itr = m_activeTextures_streamer.begin(); itr != m_activeTextures_streamer.end(); itr++) {
     KRTexture* texture = (*itr).second;
-    int min_lod_level = KRMIN(getContext().KRENGINE_TEXTURE_LQ_LOD, texture->getLodCount());
+    int min_lod_level = KRMIN(getContext().KRENGINE_TEXTURE_LQ_LOD, texture->getLodCount() - 1);
     long minLodMem = texture->getMemRequiredForLodRange(min_lod_level);
     memoryRemaining -= minLodMem;
 

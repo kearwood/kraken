@@ -63,6 +63,7 @@ public:
 
   void getResourceBindings(std::list<KRResourceBinding*>& bindings) final;
   void render(KRNode::RenderInfo& ri) final;
+  bool alwaysStreamResources() override;
 
   KRRenderSettings settings;
 

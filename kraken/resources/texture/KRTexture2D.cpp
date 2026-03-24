@@ -46,23 +46,22 @@ KRTexture2D::~KRTexture2D()
   delete m_pData;
 }
 
-bool KRTexture2D::createGPUTexture(int lod)
+bool KRTexture2D::createGPUTexture(int targetLod)
 {
   if (m_haveNewHandles) {
     return true;
   }
 
   Vector3i dimensions = getDimensions();
-  size_t bufferSize = getMemRequiredForLodRange(lod);
+  size_t bufferSize = getMemRequiredForLodRange(targetLod);
   void* buffer = malloc(bufferSize);
 
-  if (!getLodData(buffer, lod)) {
+  if (!getLodData(buffer, targetLod)) {
     delete buffer;
     return false;
   }
 
   bool success = true;
-  int target_lod = m_new_lod;
   m_new_lod = -1;
 
   KRDeviceManager* deviceManager = getContext().getDeviceManager();
@@ -76,7 +75,7 @@ bool KRTexture2D::createGPUTexture(int lod)
     texture.allocation = VK_NULL_HANDLE;
     texture.image = VK_NULL_HANDLE;
 
-    if (!allocate(device, target_lod, 0, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texture.image, &texture.allocation
+    if (!allocate(device, targetLod, 0, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texture.image, &texture.allocation
 #if KRENGINE_DEBUG_GPU_LABELS
       , getName().c_str()
 #endif
@@ -85,7 +84,7 @@ bool KRTexture2D::createGPUTexture(int lod)
       break;
     }
 
-    int min_mip = KRMIN(target_lod, m_lod_count - 1);
+    int min_mip = KRMIN(targetLod, m_lod_count - 1);
     int mip_count = m_lod_count - min_mip;
 
     VkImageViewCreateInfo viewInfo{};
@@ -135,7 +134,7 @@ bool KRTexture2D::createGPUTexture(int lod)
   delete buffer;
 
   if (success) {
-    m_new_lod = target_lod;
+    m_new_lod = targetLod;
     m_haveNewHandles = true;
   } else {
     destroyNewHandles();
