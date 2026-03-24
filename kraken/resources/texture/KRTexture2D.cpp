@@ -103,10 +103,10 @@ bool KRTexture2D::createGPUTexture(int targetLod)
       break;
     }
 
-	std::vector<VkBufferImageCopy> regions;
-	regions.resize(mip_count, VkBufferImageCopy{});
+	  std::vector<VkBufferImageCopy> regions;
+	  regions.resize(mip_count, VkBufferImageCopy{});
     int bufferOffset = 0;
-    for (int mip = min_mip; mip < min_mip + mip_count - 1; mip++) {
+    for (int mip = min_mip; mip < min_mip + mip_count; mip++) {
         VkBufferImageCopy& region = regions[mip];
         region.bufferOffset = bufferOffset;
         region.bufferRowLength = 0;
@@ -123,9 +123,8 @@ bool KRTexture2D::createGPUTexture(int targetLod)
             (unsigned int)dimensions.y,
             (unsigned int)dimensions.z
         };
-		regions.push_back(region);
 
-		bufferOffset += getMemRequiredForLod(mip);
+		    bufferOffset += getMemRequiredForLod(mip);
     }
 
     device.streamUpload((void*)buffer, bufferSize, texture.image, regions.data(), regions.size());
