@@ -7,6 +7,7 @@ set(KRAKEN_PRIVATE_HEADERS "${KRAKEN_PRIVATE_HEADERS}" PARENT_SCOPE)
 add_sources(kraken.cpp)
 add_private_headers(KREngine-common.h)
 add_sources(resources/KRResource+blend.cpp)
+add_sources(resources/KRResource+gltf.cpp)
 # add_source(resources/KRResource+fbx.cpp) # TODO - Locate FBX SDK dependencies
 add_private_headers(resources/KRResource.h)
 add_source_and_header(KRAudioBuffer)

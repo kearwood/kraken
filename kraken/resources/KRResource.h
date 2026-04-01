@@ -61,6 +61,7 @@ public:
 #if !TARGET_OS_IPHONE
   //    static KRScene* LoadFbx(KRContext &context, const std::string& path); TODO, FINDME, HACK! - Uncomment
   static KRScene* LoadBlenderScene(KRContext& context, const std::string& path);
+  static KRBundle* LoadGltf(KRContext& context, const std::string& path);
 #endif
 
 protected:

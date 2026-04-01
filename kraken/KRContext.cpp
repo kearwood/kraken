@@ -349,6 +349,8 @@ KRResource* KRContext::loadResource(const std::string& file_name, Block* data)
     resource = m_pSoundManager->load(name.c_str(), extension, data);
   } else if (extension.compare("obj") == 0) {
     resource = KRResource::LoadObj(*this, file_name);
+  } else if (extension.compare("gltf") == 0) {
+    resource = KRResource::LoadGltf(*this, file_name);
 #if !TARGET_OS_IPHONE
     /*
       // FINDME, TODO, HACK! - Uncomment
