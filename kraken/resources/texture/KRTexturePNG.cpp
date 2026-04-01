@@ -175,7 +175,7 @@ VkFormat KRTexturePNG::getFormat() const
 
 std::string KRTexturePNG::getExtension()
 {
-  return "tga";
+  return "png";
 }
 
 int KRTexturePNG::getFaceCount() const
