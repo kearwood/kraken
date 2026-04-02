@@ -147,6 +147,12 @@ add_subdirectory(3rdparty/compressonator/cmp_core)
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/compressonator/cmp_core/source")
 list (APPEND EXTRA_LIBS CMP_Core)
 
+# ---- simdjson ----
+add_subdirectory(3rdparty/simdjson)
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/simdjson/include")
+list (APPEND EXTRA_LIBS simdjson)
+target_compile_definitions(simdjson PUBLIC SIMDJSON_EXCEPTIONS=OFF)
+
 # ---- Vulkan ----
 add_library(vulkan INTERFACE)
 set(VULKAN_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/vulkan/include)

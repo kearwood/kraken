@@ -40,8 +40,30 @@
 using namespace mimir;
 using namespace hydra;
 
-KRBundle* LoadGltf(KRContext& context, const Block& jsonData, const Block& binData, const std::string& baseName)
+#include "simdjson.h"
+using namespace simdjson;
+
+KRBundle* LoadGltf(KRContext& context, Block& jsonData, Block& binData, const std::string& baseName)
 {
+  simdjson::dom::parser parser;
+  simdjson::dom::element jsonRoot;
+
+  jsonData.lock();
+  auto error = parser.parse((const char*)jsonData.getStart(), jsonData.getSize()).get(jsonRoot);
+  jsonData.unlock();
+
+  if (error) {
+    // TODO - Report and handle error
+    return nullptr;
+  }
+
+  std::string_view version;
+  error = jsonRoot["asset"]["version"].get(version);
+  if (error) {
+    // TODO - Report and handle error
+    return nullptr;
+  }
+
   KRScene* pScene = new KRScene(context, baseName + "_scene");
   KRBundle* bundle = new KRBundle(context, baseName);
 
@@ -49,6 +71,8 @@ KRBundle* LoadGltf(KRContext& context, const Block& jsonData, const Block& binDa
   KrResult result = pScene->moveToBundle(bundle);
   // TODO - Validate result
   bundle->append(*pScene);
+
+  
   return bundle;
 }
 

@@ -29,3 +29,6 @@
 	path = siren
 	url = ../siren
 	branch = main
+[submodule "3rdparty/simdjson"]
+	path = 3rdparty/simdjson
+	url = https://github.com/simdjson/simdjson.git
