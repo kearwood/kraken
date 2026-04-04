@@ -43,29 +43,59 @@ using namespace hydra;
 #include "simdjson.h"
 using namespace simdjson;
 
-KRBundle* LoadGltf(KRContext& context, Block& jsonData, Block& binData, const std::string& baseName)
+KRBundle* LoadGltf(KRContext& context, simdjson::dom::element& jsonRoot, std::vector<Block>& buffers, const std::string& baseName)
 {
-  simdjson::dom::parser parser;
-  simdjson::dom::element jsonRoot;
-
-  jsonData.lock();
-  auto error = parser.parse((const char*)jsonData.getStart(), jsonData.getSize()).get(jsonRoot);
-  jsonData.unlock();
-
+  std::string_view version;
+  simdjson::error_code error = jsonRoot["asset"]["version"].get(version);
   if (error) {
     // TODO - Report and handle error
     return nullptr;
   }
 
-  std::string_view version;
-  error = jsonRoot["asset"]["version"].get(version);
+  std::string_view minVersion;
+  error = jsonRoot["asset"]["minVersion"].get(minVersion);
+  if (error != simdjson::error_code::SUCCESS && error != simdjson::error_code::NO_SUCH_FIELD) {
+    // TODO - Report and handle error
+    return nullptr;
+  }
+
+  if (!error) {
+    // We have a minVersion field.
+    // We currently support only version 2.0 
+    if (minVersion != "2.0") {
+      // TODO - Report and handle error
+      return nullptr;
+    }
+  } else {
+    // We don't have a minversion field.
+    // We will support any version 2.x.
+    if (!version.starts_with("2.")) {
+      // TODO - Report and handle error
+      return nullptr;
+    }
+  }
+
+  simdjson::dom::array materials;
+  error = jsonRoot["materials"].get_array().get(materials);
   if (error) {
     // TODO - Report and handle error
     return nullptr;
+  }
+
+  KRBundle* bundle = new KRBundle(context, baseName);
+
+  for (auto jsonMaterial : materials) {
+    std::string_view materialName;
+    error = jsonMaterial["name"].get_string().get(materialName);
+    if (error) {
+      // TODO - Report and handle error
+      continue;
+    }
+    KRMaterial* new_material = new KRMaterial(context, std::string(materialName).c_str());
+    new_material->moveToBundle(bundle);
   }
 
   KRScene* pScene = new KRScene(context, baseName + "_scene");
-  KRBundle* bundle = new KRBundle(context, baseName);
 
   context.getSceneManager()->add(pScene);
   KrResult result = pScene->moveToBundle(bundle);
@@ -87,9 +117,38 @@ KRBundle* KRResource::LoadGltf(KRContext& context, const std::string& path)
   if (!jsonData.load(path)) {
     return nullptr;
   }
-  if (!binData.load(binFilePath)) {
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element jsonRoot;
+  jsonData.lock();
+  auto error = parser.parse((const char*)jsonData.getStart(), jsonData.getSize()).get(jsonRoot);
+  jsonData.unlock();
+  if (error) {
+    // TODO - Report and handle error
     return nullptr;
   }
 
-  return ::LoadGltf(context, jsonData, binData, fileBase);
+  simdjson::dom::array jsonBuffers;
+  error = jsonRoot["buffers"].get_array().get(jsonBuffers);
+  if (error) {
+    // TODO - Report and handle error
+    return nullptr;
+  }
+
+  std::vector<Block> buffers;
+  for (auto jsonBuffer : jsonBuffers) {
+    std::string_view bufferUri;
+    error = jsonBuffer["uri"].get_string().get(bufferUri);
+    if (error) {
+      // TODO - Report and handle error
+      return nullptr;
+    }
+    Block& block = buffers.emplace_back();
+    if (!block.load(std::string(bufferUri))) {
+      // TODO - Report and handle error
+      return nullptr;
+    }
+  }
+
+  return ::LoadGltf(context, jsonRoot, buffers, fileBase);
 }
