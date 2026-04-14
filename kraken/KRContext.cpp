@@ -340,7 +340,9 @@ KRResource* KRContext::loadResource(const std::string& file_name, Block* data)
     // shader pre-processor options definition file
     resource = m_pSourceManager->load(name, extension, data);
   } else if (extension.compare("mtl") == 0) {
-    resource = m_pMaterialManager->load(name.c_str(), data);
+    resource = m_pMaterialManager->loadResource(name.c_str(), extension, data);
+  } else if (extension.compare("krmaterial") == 0) {
+    resource = m_pMaterialManager->loadResource(name.c_str(), extension, data);
   } else if (extension.compare("mp3") == 0) {
     resource = m_pSoundManager->load(name.c_str(), extension, data);
   } else if (extension.compare("wav") == 0) {

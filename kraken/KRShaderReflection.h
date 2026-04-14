@@ -53,10 +53,8 @@ enum class ShaderValueType : uint8_t
 
 enum class ShaderValue : uint8_t
 {
-  material_ambient = 0,
-  material_diffuse,
+  material_diffuse = 0,
   material_specular,
-  material_reflection,
   material_alpha,
   material_shininess,
   light_position,
@@ -84,16 +82,13 @@ enum class ShaderValue : uint8_t
   diffusetexture,
   speculartexture,
   reflectioncubetexture,
-  reflectiontexture,
   normaltexture,
   diffusetexture_scale,
   speculartexture_scale,
-  reflectiontexture_scale,
   normaltexture_scale,
   ambienttexture_scale,
   diffusetexture_offset,
   speculartexture_offset,
-  reflectiontexture_offset,
   normaltexture_offset,
   ambienttexture_offset,
   shadow_mvp1,

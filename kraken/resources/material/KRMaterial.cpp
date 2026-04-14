@@ -36,28 +36,28 @@
 #include "KRRenderPass.h"
 
 #include "KRContext.h"
+#include "simdjson.h"
 
 using namespace mimir;
 using namespace hydra;
+using namespace simdjson;
 
-KRMaterial::KRMaterial(KRContext& context, const char* szName)
-  : KRResource(context, szName)
-  , m_ambient{ KRTexture::TEXTURE_USAGE_AMBIENT_MAP, 0, Vector2::Create(0.0f, 0.0f), Vector2::Create(1.0f, 1.0f) }
-  , m_diffuse{ KRTexture::TEXTURE_USAGE_DIFFUSE_MAP, 0, Vector2::Create(0.0f, 0.0f), Vector2::Create(1.0f, 1.0f) }
-  , m_specular{ KRTexture::TEXTURE_USAGE_NORMAL_MAP, 0, Vector2::Create(0.0f, 0.0f), Vector2::Create(1.0f, 1.0f) }
-  , m_reflection{ KRTexture::TEXTURE_USAGE_REFLECTION_MAP, 0, Vector2::Create(0.0f, 0.0f), Vector2::Create(1.0f, 1.0f) }
-  , m_reflectionCube(KRTexture::TEXTURE_USAGE_REFECTION_CUBE)
-  , m_normal{ KRTexture::TEXTURE_USAGE_NORMAL_MAP, 0, Vector2::Create(0.0f, 0.0f), Vector2::Create(1.0f, 1.0f) }
+KRMaterial::KRMaterial(KRContext& context, const char* name)
+  : KRResource(context, name)
 {
-  m_name = szName;
-  m_ambientColor = Vector3::Zero();
-  m_diffuseColor = Vector3::One();
-  m_specularColor = Vector3::One();
-  m_reflectionColor = Vector3::Zero();
-  m_tr = 1.0f;
-  m_ns = 0.0f;
-  
-  m_alpha_mode = KRMATERIAL_ALPHA_MODE_OPAQUE;
+}
+
+KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
+  : KRResource(context, name)
+{
+  simdjson::dom::parser parser;
+  simdjson::dom::element jsonRoot;
+  data->lock();
+  auto error = parser.parse((const char*)data->getStart(), data->getSize()).get(jsonRoot);
+  data->unlock();
+  if (error) {
+    // TODO - Report and handle error
+  }
 }
 
 KRMaterial::~KRMaterial()
@@ -67,21 +67,35 @@ KRMaterial::~KRMaterial()
 
 std::string KRMaterial::getExtension()
 {
-  return "mtl";
+  return "krmaterial";
 }
 
 bool KRMaterial::needsVertexTangents()
 {
-  return m_normal.texture.isSet();
+  return m_normalTexture.texture.isSet();
 }
 
 bool KRMaterial::save(Block& data)
 {
+  simdjson::builder::string_builder sb;
+  sb.start_object();
+  sb.append_key_value<"name">(getName());
+  sb.end_object();
+  const char* str = nullptr;
+  auto error = sb.c_str().get(str);
+  if (error) {
+    return false;
+    // TODO - Report error
+  }
+  data.append(str);
+  return true;
+  /*
+
   std::stringstream stream;
   stream.precision(std::numeric_limits<long double>::digits10);
   stream.setf(std::ios::fixed, std::ios::floatfield);
 
-  stream << "newmtl " << m_name;
+  stream << "newmtl " << getName();
   stream << "\nka " << m_ambientColor.x << " " << m_ambientColor.y << " " << m_ambientColor.z;
   stream << "\nkd " << m_diffuseColor.x << " " << m_diffuseColor.y << " " << m_diffuseColor.z;
   stream << "\nks " << m_specularColor.x << " " << m_specularColor.y << " " << m_specularColor.z;
@@ -118,7 +132,7 @@ bool KRMaterial::save(Block& data)
   } else {
     stream << "\n# map_ReflectionCube cubemapname";
   }
-  switch (m_alpha_mode) {
+  switch (m_alphaMode) {
   case KRMATERIAL_ALPHA_MODE_OPAQUE:
     stream << "\nalpha_mode opaque";
     break;
@@ -136,10 +150,11 @@ bool KRMaterial::save(Block& data)
 
   stream << "\n";
   data.append(stream.str());
-
   return true;
+  */
 }
 
+/*
 void KRMaterial::setAmbientMap(std::string texture_name, Vector2 texture_scale, Vector2 texture_offset)
 {
   m_ambient.texture.set(texture_name);
@@ -179,17 +194,18 @@ void KRMaterial::setReflectionCube(std::string texture_name)
 {
   m_reflectionCube.set(texture_name);
 }
+*/
 
 void KRMaterial::setAlphaMode(KRMaterial::alpha_mode_type alpha_mode)
 {
-  m_alpha_mode = alpha_mode;
+  m_alphaMode = alpha_mode;
 }
 
 KRMaterial::alpha_mode_type KRMaterial::getAlphaMode()
 {
-  return m_alpha_mode;
+  return m_alphaMode;
 }
-
+/*
 void KRMaterial::setAmbient(const Vector3& c)
 {
   m_ambientColor = c;
@@ -209,63 +225,94 @@ void KRMaterial::setReflection(const Vector3& c)
 {
   m_reflectionColor = c;
 }
+*/
 
 void KRMaterial::setTransparency(float a)
 {
-  if (a < 1.0f && m_alpha_mode == KRMaterial::KRMATERIAL_ALPHA_MODE_OPAQUE) {
-    setAlphaMode(KRMaterial::KRMATERIAL_ALPHA_MODE_BLENDONESIDE);
+  if (a < 1.0f && m_alphaMode == KRMaterial::KRMATERIAL_ALPHA_MODE_OPAQUE) {
+    setAlphaMode(KRMaterial::KRMATERIAL_ALPHA_MODE_BLEND);
   }
-  m_tr = a;
+  m_baseColorFactor[3] = a;
 }
 
 void KRMaterial::setShininess(float s)
 {
-  m_ns = s;
+  m_roughnessFactor = 1.0f - s;
 }
 
 bool KRMaterial::isTransparent()
 {
-  return m_tr < 1.0 || m_alpha_mode == KRMATERIAL_ALPHA_MODE_BLENDONESIDE || m_alpha_mode == KRMATERIAL_ALPHA_MODE_BLENDTWOSIDE;
+  return m_baseColorFactor[3] < 1.0 || m_alphaMode == KRMATERIAL_ALPHA_MODE_BLEND;
 }
 
 void KRMaterial::getResourceBindings(std::list<KRResourceBinding*>& bindings)
 {
   KRResource::getResourceBindings(bindings);
 
-  bindings.push_back(&m_ambient.texture);
-  bindings.push_back(&m_diffuse.texture);
-  bindings.push_back(&m_normal.texture);
-  bindings.push_back(&m_specular.texture);
-  bindings.push_back(&m_reflection.texture);
-  bindings.push_back(&m_reflectionCube);
+  bindings.push_back(&m_baseColorTexture.texture);
+  bindings.push_back(&m_normalTexture.texture);
+  bindings.push_back(&m_emissiveTexture.texture);
+  bindings.push_back(&m_occlusionTexture.texture);
+  bindings.push_back(&m_metalicRoughness.texture);
+  bindings.push_back(&m_anisotropyTexture.texture);
+  bindings.push_back(&m_clearcoatTexture.texture);
+  bindings.push_back(&m_clearcoatRoughnessTexture.texture);
+  bindings.push_back(&m_clearcoatNormalTexture.texture);
+  bindings.push_back(&m_specularTexture.texture);
+  bindings.push_back(&m_specularColorTexture.texture);
+  bindings.push_back(&m_thicknessTexture.texture);
 }
 
 kraken_stream_level KRMaterial::getStreamLevel()
 {
   kraken_stream_level stream_level = kraken_stream_level::STREAM_LEVEL_IN_HQ;
 
-  if (m_ambient.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_ambient.texture.get()->getStreamLevel());
+  if (m_baseColorTexture.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_baseColorTexture.texture.get()->getStreamLevel());
   }
 
-  if (m_diffuse.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_diffuse.texture.get()->getStreamLevel());
+  if (m_normalTexture.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_normalTexture.texture.get()->getStreamLevel());
   }
 
-  if (m_normal.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_normal.texture.get()->getStreamLevel());
+  if (m_occlusionTexture.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_occlusionTexture.texture.get()->getStreamLevel());
   }
 
-  if (m_specular.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_specular.texture.get()->getStreamLevel());
+  if (m_metalicRoughness.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_metalicRoughness.texture.get()->getStreamLevel());
   }
 
-  if (m_reflection.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_reflection.texture.get()->getStreamLevel());
+  if (m_anisotropyTexture.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_anisotropyTexture.texture.get()->getStreamLevel());
   }
 
-  if (m_reflectionCube.isBound()) {
-    stream_level = KRMIN(stream_level, m_reflectionCube.get()->getStreamLevel());
+  if (m_clearcoatTexture.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_clearcoatTexture.texture.get()->getStreamLevel());
+  }
+
+  if (m_clearcoatTexture.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_clearcoatTexture.texture.get()->getStreamLevel());
+  }
+
+  if (m_clearcoatRoughnessTexture.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_clearcoatRoughnessTexture.texture.get()->getStreamLevel());
+  }
+
+  if (m_clearcoatNormalTexture.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_clearcoatNormalTexture.texture.get()->getStreamLevel());
+  }
+
+  if (m_specularTexture.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_specularTexture.texture.get()->getStreamLevel());
+  }
+
+  if (m_specularColorTexture.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_specularColorTexture.texture.get()->getStreamLevel());
+  }
+
+  if (m_thicknessTexture.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_thicknessTexture.texture.get()->getStreamLevel());
   }
 
   return stream_level;
@@ -278,14 +325,14 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
   Vector2 default_scale = Vector2::One();
   Vector2 default_offset = Vector2::Zero();
 
-  bool bHasReflection = m_reflectionColor != Vector3::Zero();
-  bool bDiffuseMap = m_diffuse.texture.isBound() && ri.camera->settings.bEnableDiffuseMap;
-  bool bNormalMap = m_normal.texture.isBound() && ri.camera->settings.bEnableNormalMap;
-  bool bSpecMap = m_specular.texture.isBound() && ri.camera->settings.bEnableSpecMap;
-  bool bReflectionMap = m_reflection.texture.isBound() && ri.camera->settings.bEnableReflectionMap && ri.camera->settings.bEnableReflection && bHasReflection;
-  bool bReflectionCubeMap = m_reflectionCube.isBound() && ri.camera->settings.bEnableReflection && bHasReflection;
-  bool bAlphaTest = (m_alpha_mode == KRMATERIAL_ALPHA_MODE_TEST) && bDiffuseMap;
-  bool bAlphaBlend = (m_alpha_mode == KRMATERIAL_ALPHA_MODE_BLENDONESIDE) || (m_alpha_mode == KRMATERIAL_ALPHA_MODE_BLENDTWOSIDE);
+  bool bHasReflection = m_roughnessFactor > 0.f;
+  bool bDiffuseMap = m_baseColorTexture.texture.isBound() && ri.camera->settings.bEnableDiffuseMap;
+  bool bNormalMap = m_normalTexture.texture.isBound() && ri.camera->settings.bEnableNormalMap;
+  bool bSpecMap = false;
+  bool bReflectionMap = false;
+  bool bReflectionCubeMap = false;
+  bool bAlphaTest = m_alphaMode == KRMATERIAL_ALPHA_MODE_TEST;
+  bool bAlphaBlend = m_alphaMode == KRMATERIAL_ALPHA_MODE_BLEND;
 
   PipelineInfo info{};
   std::string shader_name("object");
@@ -302,14 +349,14 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
   info.bReflectionMap = bReflectionMap;
   info.bReflectionCubeMap = bReflectionCubeMap;
   info.bLightMap = bLightMap;
-  info.bDiffuseMapScale = m_diffuse.scale != default_scale && bDiffuseMap;
-  info.bSpecMapScale = m_specular.scale != default_scale && bSpecMap;
-  info.bNormalMapScale = m_normal.scale != default_scale && bNormalMap;
-  info.bReflectionMapScale = m_reflection.scale != default_scale && bReflectionMap;
-  info.bDiffuseMapOffset = m_diffuse.offset != default_offset && bDiffuseMap;
-  info.bSpecMapOffset = m_specular.offset != default_offset && bSpecMap;
-  info.bNormalMapOffset = m_normal.offset != default_offset && bNormalMap;
-  info.bReflectionMapOffset = m_reflection.offset != default_offset && bReflectionMap;
+  info.bDiffuseMapScale = m_baseColorTexture.scale != default_scale && bDiffuseMap;
+  info.bSpecMapScale = false;
+  info.bNormalMapScale = m_normalTexture.scale != default_scale && bNormalMap;
+  info.bReflectionMapScale = false;
+  info.bDiffuseMapOffset = false;
+  info.bSpecMapOffset = false;
+  info.bNormalMapOffset = m_normalTexture.offset != default_offset && bNormalMap;
+  info.bReflectionMapOffset = false;
   info.bAlphaTest = bAlphaTest;
   info.rasterMode = bAlphaBlend ? RasterMode::kAlphaBlend : RasterMode::kOpaque;
   info.renderPass = ri.renderPass;
@@ -352,23 +399,25 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
   }
 
   if (bDiffuseMap) {
-    pShader->setImageBinding("diffuseTexture", m_diffuse.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
+    pShader->setImageBinding("diffuseTexture", m_baseColorTexture.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
   }
 
   if (bSpecMap) {
-    pShader->setImageBinding("specularTexture", m_specular.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
+    pShader->setImageBinding("specularTexture", m_specularColorTexture.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
   }
 
   if (bNormalMap) {
-    pShader->setImageBinding("normalTexture", m_normal.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
+    pShader->setImageBinding("normalTexture", m_normalTexture.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
   }
 
   if (bReflectionCubeMap) {
-    pShader->setImageBinding("reflectionCubeTexture", m_reflectionCube.get(), getContext().getSamplerManager()->DEFAULT_CLAMPED_SAMPLER);
+    // Deprecated by reflection cubes..
+    // pShader->setImageBinding("reflectionCubeTexture", m_reflectionCube.get(), getContext().getSamplerManager()->DEFAULT_CLAMPED_SAMPLER);
   }
 
   if (bReflectionMap) {
-    pShader->setImageBinding("reflectionTexture", m_reflection.texture.get(), getContext().getSamplerManager()->DEFAULT_CLAMPED_SAMPLER);
+    // Deprecated by PBR model..
+    // pShader->setImageBinding("reflectionTexture", m_reflection.texture.get(), getContext().getSamplerManager()->DEFAULT_CLAMPED_SAMPLER);
   }
 
   ri.reflectedObjects.push_back(this);
@@ -376,20 +425,14 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
   ri.reflectedObjects.pop_back();
 }
 
-const std::string& KRMaterial::getName() const
-{
-  return m_name;
-}
-
-
 bool KRMaterial::getShaderValue(ShaderValue value, float* output) const
 {
   switch (value) {
   case ShaderValue::material_alpha:
-    *output = m_tr;
+    *output = m_baseColorFactor[3];
     return true;
   case ShaderValue::material_shininess:
-    *output = m_ns;
+    *output = 1.0f - m_roughnessFactor;
     return true;
   }
   return false;
@@ -399,28 +442,22 @@ bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector2* output) const
 {
   switch (value) {
   case ShaderValue::diffusetexture_scale:
-    *output = m_diffuse.scale;
+    *output = m_baseColorTexture.scale;
     return true;
   case ShaderValue::speculartexture_scale:
-    *output = m_specular.scale;
-    return true;
-  case ShaderValue::reflectiontexture_scale:
-    *output = m_reflection.scale;
+    *output = m_specularColorTexture.scale;
     return true;
   case ShaderValue::normaltexture_scale:
-    *output = m_normal.scale;
+    *output = m_normalTexture.scale;
     return true;
   case ShaderValue::diffusetexture_offset:
-    *output = m_diffuse.offset;
+    *output = m_baseColorTexture.offset;
     return true;
   case ShaderValue::speculartexture_offset:
-    *output = m_specular.offset;
-    return true;
-  case ShaderValue::reflectiontexture_offset:
-    *output = m_reflection.offset;
+    *output = m_specularColorTexture.offset;
     return true;
   case ShaderValue::normaltexture_offset:
-    *output = m_normal.offset;
+    *output = m_normalTexture.offset;
     return true;
   }
   return false;
@@ -429,17 +466,11 @@ bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector2* output) const
 bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector3* output) const
 {
   switch (value) {
-  case ShaderValue::material_reflection:
-    *output = m_reflectionColor;
-    return true;
-  case ShaderValue::material_ambient:
-    *output = m_ambientColor;
-    return true;
   case ShaderValue::material_diffuse:
-    *output = m_diffuseColor;
+    *output = hydra::Vector3::Create(m_baseColorFactor);
     return true;
   case ShaderValue::material_specular:
-    *output = m_specularColor;
+    *output = m_specularColorFactor;
     return true;
   }
   return false;

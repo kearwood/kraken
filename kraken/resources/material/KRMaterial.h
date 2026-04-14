@@ -61,26 +61,31 @@ public:
   {
     KRMATERIAL_ALPHA_MODE_OPAQUE, // Non-transparent materials
     KRMATERIAL_ALPHA_MODE_TEST, // Alpha in diffuse texture is interpreted as punch-through when < 0.5
-    KRMATERIAL_ALPHA_MODE_BLENDONESIDE, // Blended alpha with backface culling
-    KRMATERIAL_ALPHA_MODE_BLENDTWOSIDE // Blended alpha rendered in two passes.  First pass renders backfaces; second pass renders frontfaces.
+    KRMATERIAL_ALPHA_MODE_BLEND // Blended alpha with backface culling
   } alpha_mode_type;
 
   struct TransformedTexture
   {
     KRTextureBinding texture;
-    int texCoord = 0; // uv texture index
-    hydra::Vector2 scale{};
-    hydra::Vector2 offset{};
-    float rotation = 0;
+    int texCoord{ 0 };
+    hydra::Vector2 scale{ 1.f, 1.f };
+    hydra::Vector2 offset{ 0.f, 0.f };
+    float rotation{ 0.f };
+
+    TransformedTexture(KRTexture::texture_usage_t usage)
+      : texture{ usage }
+    {
+    }
   };
 
   KRMaterial(KRContext& context, const char* szName);
+  KRMaterial(KRContext& context, std::string name, mimir::Block* data);
   virtual ~KRMaterial();
 
   virtual std::string getExtension();
   virtual bool save(mimir::Block& data);
 
-
+  /*
   void setAmbientMap(std::string texture_name, hydra::Vector2 texture_scale, hydra::Vector2 texture_offset);
   void setDiffuseMap(std::string texture_name, hydra::Vector2 texture_scale, hydra::Vector2 texture_offset);
   void setSpecularMap(std::string texture_name, hydra::Vector2 texture_scale, hydra::Vector2 texture_offset);
@@ -91,15 +96,16 @@ public:
   void setDiffuse(const hydra::Vector3& c);
   void setSpecular(const hydra::Vector3& c);
   void setReflection(const hydra::Vector3& c);
+  */
   void setTransparency(float a);
   void setShininess(float s);
   void setAlphaMode(alpha_mode_type blend_mode);
   alpha_mode_type getAlphaMode();
 
 
-  bool isTransparent();
-  const std::string& getName() const;
 
+  bool isTransparent();
+  
   void bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_t vertexAttributes, CullMode cullMode, const std::vector<KRBone*>& bones, const std::vector<hydra::Matrix4>& bind_poses, const hydra::Matrix4& matModel, KRTexture* pLightMap, float lod_coverage = 0.0f);
 
   bool needsVertexTangents();
@@ -108,29 +114,45 @@ public:
 
   virtual void getResourceBindings(std::list<KRResourceBinding*>& bindings) override;
 
-private:
-  std::string m_name;
-  TransformedTexture m_ambient;// mtl map_Ka value
-  TransformedTexture m_diffuse; // mtl map_Kd value
-  TransformedTexture m_specular; // mtl map_Ks value
-  TransformedTexture m_reflection; // mtl refl value
-  KRTextureBinding m_reflectionCube;
-  TransformedTexture m_normal; // mtl map_Normal value
+  // --- Serialized Material Attributes ---
+  TransformedTexture m_baseColorTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_BASE_COLOR };
+  hydra::Vector4 m_baseColorFactor{ 1.f, 1.f, 1.f, 1.f };
+  TransformedTexture m_normalTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_NORMAL };
+  float m_normalScale{ 1.f };
+  TransformedTexture m_emissiveTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_EMISSIVE };
+  hydra::Vector3 m_emissiveFactor{ 0.f, 0.f, 0.f };
+  TransformedTexture m_occlusionTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_OCCLUSION };
+  float m_occlusionStrength{ 1.f };
+  TransformedTexture m_metalicRoughness{ KRTexture::TEXTURE_USAGE_MATERIAL_METALIC_ROUGHNESS };
+  float m_metalicFactor{ 1.f };
+  float m_roughnessFactor{ 1.f };
+  alpha_mode_type m_alphaMode{ KRMATERIAL_ALPHA_MODE_OPAQUE };
+  float m_alphaCutoff{ 0.5f };
+  bool m_doubleSided{ false };
+  float m_ior{ 1.5f };
+  bool m_isUnlit{ false };
 
-  hydra::Vector3 m_ambientColor; // Ambient rgb
-  hydra::Vector3 m_diffuseColor; // Diffuse rgb
-  hydra::Vector3 m_specularColor; // Specular rgb
-  hydra::Vector3 m_reflectionColor; // Reflection rgb
+  TransformedTexture m_anisotropyTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_ANISOTROPY };
+  float m_anisotropyStrength{ 0.f };
+  float m_anisotropyRotation{ 0.f };
 
-  //float m_ka_r, m_ka_g, m_ka_b; // Ambient rgb
-  //float m_kd_r, m_kd_g, m_kd_b; // Diffuse rgb
-  //float m_ks_r, m_ks_g, m_ks_b; // Specular rgb
-  //float m_kr_r, m_kr_g, m_kr_b; // Reflection rgb
+  TransformedTexture m_clearcoatTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_CLEARCOAT };
+  float m_clearcoatFactor{ 0.f };
+  TransformedTexture m_clearcoatRoughnessTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_CLEARCOAT_ROUGHNESS };
+  float m_clearcoatRoughnessFactor{ 0.f };
+  TransformedTexture m_clearcoatNormalTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_CLEARCOAT_NORMAL };
 
-  float m_tr; // Transparency
-  float m_ns; // Shininess
+  float m_dispersion{ 0.f };
 
-  alpha_mode_type m_alpha_mode;
+  TransformedTexture m_specularTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_SPECULAR };
+  float m_specularFactor{ 1.f };
+  TransformedTexture m_specularColorTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_SPECULAR_COLOR };
+  hydra::Vector3 m_specularColorFactor{ 1.f, 1.f, 1.f };
+
+  TransformedTexture m_thicknessTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_THICKNESS };
+  float m_thicknessFactor{ 0.f };
+  float m_attenuationDistance{ std::numeric_limits<float>::max() };
+  hydra::Vector3 m_attenuationColor{ 1.f, 1.f, 1.f };
 
 private:
   bool getShaderValue(ShaderValue value, float* output) const final;

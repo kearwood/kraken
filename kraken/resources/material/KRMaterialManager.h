@@ -52,7 +52,7 @@ public:
   virtual KRResource* loadResource(const std::string& name, const std::string& extension, mimir::Block* data) override;
   virtual KRResource* getResource(const std::string& name, const std::string& extension) override;
 
-  KRMaterial* load(const char* szName, mimir::Block* data);
+  KRMaterial* loadMtl(mimir::Block* data);
   void add(KRMaterial* new_material);
   KRMaterial* getMaterial(const std::string& name);
 

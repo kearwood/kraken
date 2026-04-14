@@ -49,17 +49,19 @@ KRMaterialManager::~KRMaterialManager()
 KRResource* KRMaterialManager::loadResource(const std::string& name, const std::string& extension, Block* data)
 {
   if (extension.compare("mtl") == 0) {
-    return load(name.c_str(), data);
+    return loadMtl(data);
+  } else if (extension.compare("krmaterial") == 0) {
+    KRMaterial* material = new KRMaterial(*m_pContext, name, data);
+    add(material);
+    return material;
   }
+
   return nullptr;
 }
 
 KRResource* KRMaterialManager::getResource(const std::string& name, const std::string& extension)
 {
-  if (extension.compare("mtl") == 0) {
-    // TODO - This is not correct -- there are multiple materials emitted in a single mtl file.
-    //        We should treat "mtl" files as source files, managed by KRSource, which output
-    //        material resources when compiled.
+  if (extension.compare("krmaterial") == 0) {
     return m_materials[name];
   }
   return nullptr;
@@ -97,7 +99,7 @@ void KRMaterialManager::add(KRMaterial* new_material)
   m_materials[lowerName] = new_material;
 }
 
-KRMaterial* KRMaterialManager::load(const char* szName, Block* data)
+KRMaterial* KRMaterialManager::loadMtl(Block* data)
 {
   KRMaterial* pMaterial = NULL;
   char szSymbol[16][256];
@@ -151,61 +153,65 @@ KRMaterial* KRMaterialManager::load(const char* szName, Block* data)
             if (cSymbols == 2) {
               if (strcmp(szSymbol[1], "test") == 0) {
                 pMaterial->setAlphaMode(KRMaterial::KRMATERIAL_ALPHA_MODE_TEST);
+                pMaterial->m_doubleSided = false;
               } else if (strcmp(szSymbol[1], "blendoneside") == 0) {
-                pMaterial->setAlphaMode(KRMaterial::KRMATERIAL_ALPHA_MODE_BLENDONESIDE);
+                pMaterial->setAlphaMode(KRMaterial::KRMATERIAL_ALPHA_MODE_BLEND);
+                pMaterial->m_doubleSided = false;
               } else if (strcmp(szSymbol[1], "blendtwoside") == 0) {
-                pMaterial->setAlphaMode(KRMaterial::KRMATERIAL_ALPHA_MODE_BLENDTWOSIDE);
+                pMaterial->setAlphaMode(KRMaterial::KRMATERIAL_ALPHA_MODE_BLEND);
+                pMaterial->m_doubleSided = true;
               } else {
                 pMaterial->setAlphaMode(KRMaterial::KRMATERIAL_ALPHA_MODE_OPAQUE);
+                pMaterial->m_doubleSided = false;
               }
             }
           } else if (strcmp(szSymbol[0], "ka") == 0) {
             char* pScan2 = szSymbol[1];
             float r = strtof(pScan2, &pScan2);
             if (cSymbols == 2) {
-              pMaterial->setAmbient(Vector3::Create(r, r, r));
+              // pMaterial->setAmbient(Vector3::Create(r, r, r)); // TODO - Map to modern material attributes. (Eg, detect unlit?)
             } else if (cSymbols == 4) {
               pScan2 = szSymbol[2];
               float g = strtof(pScan2, &pScan2);
               pScan2 = szSymbol[3];
               float b = strtof(pScan2, &pScan2);
-              pMaterial->setAmbient(Vector3::Create(r, g, b));
+              // pMaterial->setAmbient(Vector3::Create(r, g, b)); // TODO - Map to modern material attributes. (Eg, detect unlit?)
             }
           } else if (strcmp(szSymbol[0], "kd") == 0) {
             char* pScan2 = szSymbol[1];
             float r = strtof(pScan2, &pScan2);
             if (cSymbols == 2) {
-              pMaterial->setDiffuse(Vector3::Create(r, r, r));
+              pMaterial->m_baseColorFactor = Vector4::Create(r, r, r, 1.f);
             } else if (cSymbols == 4) {
               pScan2 = szSymbol[2];
               float g = strtof(pScan2, &pScan2);
               pScan2 = szSymbol[3];
               float b = strtof(pScan2, &pScan2);
-              pMaterial->setDiffuse(Vector3::Create(r, g, b));
+              pMaterial->m_baseColorFactor = Vector4::Create(r, g, b, 1.f);
             }
           } else if (strcmp(szSymbol[0], "ks") == 0) {
             char* pScan2 = szSymbol[1];
             float r = strtof(pScan2, &pScan2);
             if (cSymbols == 2) {
-              pMaterial->setSpecular(Vector3::Create(r, r, r));
+              pMaterial->m_specularColorFactor = Vector3::Create(r, r, r);
             } else if (cSymbols == 4) {
               pScan2 = szSymbol[2];
               float g = strtof(pScan2, &pScan2);
               pScan2 = szSymbol[3];
               float b = strtof(pScan2, &pScan2);
-              pMaterial->setSpecular(Vector3::Create(r, g, b));
+              pMaterial->m_specularColorFactor = Vector3::Create(r, g, b);
             }
           } else if (strcmp(szSymbol[0], "kr") == 0) {
             char* pScan2 = szSymbol[1];
             float r = strtof(pScan2, &pScan2);
             if (cSymbols == 2) {
-              pMaterial->setReflection(Vector3::Create(r, r, r));
+              pMaterial->m_roughnessFactor = 1.f - r;
             } else if (cSymbols == 4) {
               pScan2 = szSymbol[2];
               float g = strtof(pScan2, &pScan2);
               pScan2 = szSymbol[3];
               float b = strtof(pScan2, &pScan2);
-              pMaterial->setReflection(Vector3::Create(r, g, b));
+              // pMaterial->setReflection(Vector3::Create(r, g, b)); // TODO - Map to modern material attributes
             }
           } else if (strcmp(szSymbol[0], "tr") == 0) {
             char* pScan2 = szSymbol[1];
@@ -265,17 +271,23 @@ KRMaterial* KRMaterialManager::load(const char* szName, Block* data)
             }
 
             if (strcmp(szSymbol[0], "map_ka") == 0) {
-              pMaterial->setAmbientMap(szSymbol[1], texture_scale, texture_offset);
+              // pMaterial->setAmbientMap(szSymbol[1], texture_scale, texture_offset); // TODO - Map to modern material attributes. (Eg, unlit?)
             } else if (strcmp(szSymbol[0], "map_kd") == 0) {
-              pMaterial->setDiffuseMap(szSymbol[1], texture_scale, texture_offset);
+              pMaterial->m_baseColorTexture.texture.set(szSymbol[1]);
+              pMaterial->m_baseColorTexture.scale = texture_scale;
+              pMaterial->m_baseColorTexture.offset = texture_offset;
             } else if (strcmp(szSymbol[0], "map_ks") == 0) {
-              pMaterial->setSpecularMap(szSymbol[1], texture_scale, texture_offset);
+              pMaterial->m_specularColorTexture.texture.set(szSymbol[1]);
+              pMaterial->m_specularColorTexture.scale = texture_scale;
+              pMaterial->m_specularColorTexture.offset = texture_offset;
             } else if (strcmp(szSymbol[0], "map_normal") == 0) {
-              pMaterial->setNormalMap(szSymbol[1], texture_scale, texture_offset);
+              pMaterial->m_normalTexture.texture.set(szSymbol[1]);
+              pMaterial->m_normalTexture.scale = texture_scale;
+              pMaterial->m_normalTexture.offset = texture_offset;
             } else if (strcmp(szSymbol[0], "map_reflection") == 0) {
-              pMaterial->setReflectionMap(szSymbol[1], texture_scale, texture_offset);
+              // pMaterial->setReflectionMap(szSymbol[1], texture_scale, texture_offset); // TODO - Map to modern material attributes.
             } else if (strcmp(szSymbol[0], "map_reflectioncube") == 0) {
-              pMaterial->setReflectionCube(szSymbol[1]);
+              // pMaterial->setReflectionCube(szSymbol[1]); // TODO - Map to modern material attributes. Deprecated by reflection probes?
             }
           }
         }

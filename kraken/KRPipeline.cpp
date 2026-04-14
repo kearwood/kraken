@@ -722,7 +722,7 @@ void KRPipeline::updatePushConstants(KRNode::RenderInfo& ri, const Matrix4& matM
   setPushConstant(ShaderValue::lightmaptexture, 5);
   setPushConstant(ShaderValue::gbuffer_frame, 6);
   setPushConstant(ShaderValue::gbuffer_depth, 7); // Texture unit 7 is used for reading the depth buffer in gBuffer pass #2 and in post-processing pass
-  setPushConstant(ShaderValue::reflectiontexture, 7); // Texture unit 7 is used for the reflection map textures in gBuffer pass #3 and when using forward rendering
+  // setPushConstant(ShaderValue::reflectiontexture, 7); // Texture unit 7 is used for the reflection map textures in gBuffer pass #3 and when using forward rendering
   setPushConstant(ShaderValue::depth_frame, 0);
   setPushConstant(ShaderValue::render_frame, 1);
   setPushConstant(ShaderValue::volumetric_environment_frame, 2);

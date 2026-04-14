@@ -189,7 +189,7 @@ float KRTexture::getStreamPriority()
     if (m_last_frame_usage & (TEXTURE_USAGE_SKY_CUBE | TEXTURE_USAGE_PARTICLE | TEXTURE_USAGE_SPRITE | TEXTURE_USAGE_LIGHT_FLARE)) {
       priority += 1000000.0f;
     }
-    if (m_last_frame_usage & (TEXTURE_USAGE_DIFFUSE_MAP | TEXTURE_USAGE_AMBIENT_MAP | TEXTURE_USAGE_SPECULAR_MAP | TEXTURE_USAGE_NORMAL_MAP | TEXTURE_USAGE_REFLECTION_MAP)) {
+    if (m_last_frame_usage & (TEXTURE_USAGE_MATERIAL)) {
       priority += 100000.0f;
     }
     if (m_last_frame_usage & (TEXTURE_USAGE_LIGHT_MAP)) {
