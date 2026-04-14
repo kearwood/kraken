@@ -42,12 +42,12 @@ using namespace hydra;
 
 KRMaterial::KRMaterial(KRContext& context, const char* szName)
   : KRResource(context, szName)
-  , m_ambientMap(KRTextureBinding(KRTexture::TEXTURE_USAGE_AMBIENT_MAP))
-  , m_diffuseMap(KRTexture::TEXTURE_USAGE_DIFFUSE_MAP)
-  , m_specularMap(KRTexture::TEXTURE_USAGE_NORMAL_MAP)
-  , m_reflectionMap(KRTexture::TEXTURE_USAGE_REFLECTION_MAP)
+  , m_ambient{ KRTexture::TEXTURE_USAGE_AMBIENT_MAP, 0, Vector2::Create(0.0f, 0.0f), Vector2::Create(1.0f, 1.0f) }
+  , m_diffuse{ KRTexture::TEXTURE_USAGE_DIFFUSE_MAP, 0, Vector2::Create(0.0f, 0.0f), Vector2::Create(1.0f, 1.0f) }
+  , m_specular{ KRTexture::TEXTURE_USAGE_NORMAL_MAP, 0, Vector2::Create(0.0f, 0.0f), Vector2::Create(1.0f, 1.0f) }
+  , m_reflection{ KRTexture::TEXTURE_USAGE_REFLECTION_MAP, 0, Vector2::Create(0.0f, 0.0f), Vector2::Create(1.0f, 1.0f) }
   , m_reflectionCube(KRTexture::TEXTURE_USAGE_REFECTION_CUBE)
-  , m_normalMap(KRTexture::TEXTURE_USAGE_NORMAL_MAP)
+  , m_normal{ KRTexture::TEXTURE_USAGE_NORMAL_MAP, 0, Vector2::Create(0.0f, 0.0f), Vector2::Create(1.0f, 1.0f) }
 {
   m_name = szName;
   m_ambientColor = Vector3::Zero();
@@ -56,14 +56,7 @@ KRMaterial::KRMaterial(KRContext& context, const char* szName)
   m_reflectionColor = Vector3::Zero();
   m_tr = 1.0f;
   m_ns = 0.0f;
-  m_ambientMapOffset = Vector2::Create(0.0f, 0.0f);
-  m_specularMapOffset = Vector2::Create(0.0f, 0.0f);
-  m_diffuseMapOffset = Vector2::Create(0.0f, 0.0f);
-  m_ambientMapScale = Vector2::Create(1.0f, 1.0f);
-  m_specularMapScale = Vector2::Create(1.0f, 1.0f);
-  m_diffuseMapScale = Vector2::Create(1.0f, 1.0f);
-  m_reflectionMapOffset = Vector2::Create(0.0f, 0.0f);
-  m_reflectionMapScale = Vector2::Create(1.0f, 1.0f);
+  
   m_alpha_mode = KRMATERIAL_ALPHA_MODE_OPAQUE;
 }
 
@@ -79,7 +72,7 @@ std::string KRMaterial::getExtension()
 
 bool KRMaterial::needsVertexTangents()
 {
-  return m_normalMap.isSet();
+  return m_normal.texture.isSet();
 }
 
 bool KRMaterial::save(Block& data)
@@ -95,28 +88,28 @@ bool KRMaterial::save(Block& data)
   stream << "\nkr " << m_reflectionColor.x << " " << m_reflectionColor.y << " " << m_reflectionColor.z;
   stream << "\nTr " << m_tr;
   stream << "\nNs " << m_ns;
-  if (m_ambientMap.isSet()) {
-    stream << "\nmap_Ka " << m_ambientMap.getName() << ".pvr -s " << m_ambientMapScale.x << " " << m_ambientMapScale.y << " -o " << m_ambientMapOffset.x << " " << m_ambientMapOffset.y;
+  if (m_ambient.texture.isSet()) {
+    stream << "\nmap_Ka " << m_ambient.texture.getName() << ".pvr -s " << m_ambient.scale.x << " " << m_ambient.scale.y << " -o " << m_ambient.offset.x << " " << m_ambient.offset.y;
   } else {
     stream << "\n# map_Ka filename.pvr -s 1.0 1.0 -o 0.0 0.0";
   }
-  if (m_diffuseMap.isSet()) {
-    stream << "\nmap_Kd " << m_diffuseMap.getName() << ".pvr -s " << m_diffuseMapScale.x << " " << m_diffuseMapScale.y << " -o " << m_diffuseMapOffset.x << " " << m_diffuseMapOffset.y;
+  if (m_diffuse.texture.isSet()) {
+    stream << "\nmap_Kd " << m_diffuse.texture.getName() << ".pvr -s " << m_diffuse.scale.x << " " << m_diffuse.scale.y << " -o " << m_diffuse.offset.x << " " << m_diffuse.offset.y;
   } else {
     stream << "\n# map_Kd filename.pvr -s 1.0 1.0 -o 0.0 0.0";
   }
-  if (m_specularMap.isSet()) {
-    stream << "\nmap_Ks " << m_specularMap.getName() << ".pvr -s " << m_specularMapScale.x << " " << m_specularMapScale.y << " -o " << m_specularMapOffset.x << " " << m_specularMapOffset.y << "\n";
+  if (m_specular.texture.isSet()) {
+    stream << "\nmap_Ks " << m_specular.texture.getName() << ".pvr -s " << m_specular.scale.x << " " << m_specular.scale.y << " -o " << m_specular.offset.x << " " << m_specular.offset.y << "\n";
   } else {
     stream << "\n# map_Ks filename.pvr -s 1.0 1.0 -o 0.0 0.0";
   }
-  if (m_normalMap.isSet()) {
-    stream << "\nmap_Normal " << m_normalMap.getName() << ".pvr -s " << m_normalMapScale.x << " " << m_normalMapScale.y << " -o " << m_normalMapOffset.x << " " << m_normalMapOffset.y;
+  if (m_normal.texture.isSet()) {
+    stream << "\nmap_Normal " << m_normal.texture.getName() << ".pvr -s " << m_normal.scale.x << " " << m_normal.scale.y << " -o " << m_normal.offset.x << " " << m_normal.offset.y;
   } else {
     stream << "\n# map_Normal filename.pvr -s 1.0 1.0 -o 0.0 0.0";
   }
-  if (m_reflectionMap.isSet()) {
-    stream << "\nmap_Reflection " << m_reflectionMap.getName() << ".pvr -s " << m_reflectionMapScale.x << " " << m_reflectionMapScale.y << " -o " << m_reflectionMapOffset.x << " " << m_reflectionMapOffset.y;
+  if (m_reflection.texture.isSet()) {
+    stream << "\nmap_Reflection " << m_reflection.texture.getName() << ".pvr -s " << m_reflection.scale.x << " " << m_reflection.scale.y << " -o " << m_reflection.offset.x << " " << m_reflection.offset.y;
   } else {
     stream << "\n# map_Reflection filename.pvr -s 1.0 1.0 -o 0.0 0.0";
   }
@@ -149,37 +142,37 @@ bool KRMaterial::save(Block& data)
 
 void KRMaterial::setAmbientMap(std::string texture_name, Vector2 texture_scale, Vector2 texture_offset)
 {
-  m_ambientMap.set(texture_name);
-  m_ambientMapScale = texture_scale;
-  m_ambientMapOffset = texture_offset;
+  m_ambient.texture.set(texture_name);
+  m_ambient.scale = texture_scale;
+  m_ambient.offset = texture_offset;
 }
 
 void KRMaterial::setDiffuseMap(std::string texture_name, Vector2 texture_scale, Vector2 texture_offset)
 {
-  m_diffuseMap.set(texture_name);
-  m_diffuseMapScale = texture_scale;
-  m_diffuseMapOffset = texture_offset;
+  m_diffuse.texture.set(texture_name);
+  m_diffuse.scale = texture_scale;
+  m_diffuse.offset = texture_offset;
 }
 
 void KRMaterial::setSpecularMap(std::string texture_name, Vector2 texture_scale, Vector2 texture_offset)
 {
-  m_specularMap.set(texture_name);
-  m_specularMapScale = texture_scale;
-  m_specularMapOffset = texture_offset;
+  m_specular.texture.set(texture_name);
+  m_specular.scale = texture_scale;
+  m_specular.offset = texture_offset;
 }
 
 void KRMaterial::setNormalMap(std::string texture_name, Vector2 texture_scale, Vector2 texture_offset)
 {
-  m_normalMap.set(texture_name);
-  m_normalMapScale = texture_scale;
-  m_normalMapOffset = texture_offset;
+  m_normal.texture.set(texture_name);
+  m_normal.scale = texture_scale;
+  m_normal.offset = texture_offset;
 }
 
 void KRMaterial::setReflectionMap(std::string texture_name, Vector2 texture_scale, Vector2 texture_offset)
 {
-  m_reflectionMap.set(texture_name);
-  m_reflectionMapScale = texture_scale;
-  m_reflectionMapOffset = texture_offset;
+  m_reflection.texture.set(texture_name);
+  m_reflection.scale = texture_scale;
+  m_reflection.offset = texture_offset;
 }
 
 void KRMaterial::setReflectionCube(std::string texture_name)
@@ -239,11 +232,11 @@ void KRMaterial::getResourceBindings(std::list<KRResourceBinding*>& bindings)
 {
   KRResource::getResourceBindings(bindings);
 
-  bindings.push_back(&m_ambientMap);
-  bindings.push_back(&m_diffuseMap);
-  bindings.push_back(&m_normalMap);
-  bindings.push_back(&m_specularMap);
-  bindings.push_back(&m_reflectionMap);
+  bindings.push_back(&m_ambient.texture);
+  bindings.push_back(&m_diffuse.texture);
+  bindings.push_back(&m_normal.texture);
+  bindings.push_back(&m_specular.texture);
+  bindings.push_back(&m_reflection.texture);
   bindings.push_back(&m_reflectionCube);
 }
 
@@ -251,24 +244,24 @@ kraken_stream_level KRMaterial::getStreamLevel()
 {
   kraken_stream_level stream_level = kraken_stream_level::STREAM_LEVEL_IN_HQ;
 
-  if (m_ambientMap.isBound()) {
-    stream_level = KRMIN(stream_level, m_ambientMap.get()->getStreamLevel());
+  if (m_ambient.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_ambient.texture.get()->getStreamLevel());
   }
 
-  if (m_diffuseMap.isBound()) {
-    stream_level = KRMIN(stream_level, m_diffuseMap.get()->getStreamLevel());
+  if (m_diffuse.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_diffuse.texture.get()->getStreamLevel());
   }
 
-  if (m_normalMap.isBound()) {
-    stream_level = KRMIN(stream_level, m_normalMap.get()->getStreamLevel());
+  if (m_normal.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_normal.texture.get()->getStreamLevel());
   }
 
-  if (m_specularMap.isBound()) {
-    stream_level = KRMIN(stream_level, m_specularMap.get()->getStreamLevel());
+  if (m_specular.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_specular.texture.get()->getStreamLevel());
   }
 
-  if (m_reflectionMap.isBound()) {
-    stream_level = KRMIN(stream_level, m_reflectionMap.get()->getStreamLevel());
+  if (m_reflection.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_reflection.texture.get()->getStreamLevel());
   }
 
   if (m_reflectionCube.isBound()) {
@@ -286,10 +279,10 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
   Vector2 default_offset = Vector2::Zero();
 
   bool bHasReflection = m_reflectionColor != Vector3::Zero();
-  bool bDiffuseMap = m_diffuseMap.isBound() && ri.camera->settings.bEnableDiffuseMap;
-  bool bNormalMap = m_normalMap.isBound() && ri.camera->settings.bEnableNormalMap;
-  bool bSpecMap = m_specularMap.isBound() && ri.camera->settings.bEnableSpecMap;
-  bool bReflectionMap = m_reflectionMap.isBound() && ri.camera->settings.bEnableReflectionMap && ri.camera->settings.bEnableReflection && bHasReflection;
+  bool bDiffuseMap = m_diffuse.texture.isBound() && ri.camera->settings.bEnableDiffuseMap;
+  bool bNormalMap = m_normal.texture.isBound() && ri.camera->settings.bEnableNormalMap;
+  bool bSpecMap = m_specular.texture.isBound() && ri.camera->settings.bEnableSpecMap;
+  bool bReflectionMap = m_reflection.texture.isBound() && ri.camera->settings.bEnableReflectionMap && ri.camera->settings.bEnableReflection && bHasReflection;
   bool bReflectionCubeMap = m_reflectionCube.isBound() && ri.camera->settings.bEnableReflection && bHasReflection;
   bool bAlphaTest = (m_alpha_mode == KRMATERIAL_ALPHA_MODE_TEST) && bDiffuseMap;
   bool bAlphaBlend = (m_alpha_mode == KRMATERIAL_ALPHA_MODE_BLENDONESIDE) || (m_alpha_mode == KRMATERIAL_ALPHA_MODE_BLENDTWOSIDE);
@@ -309,14 +302,14 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
   info.bReflectionMap = bReflectionMap;
   info.bReflectionCubeMap = bReflectionCubeMap;
   info.bLightMap = bLightMap;
-  info.bDiffuseMapScale = m_diffuseMapScale != default_scale && bDiffuseMap;
-  info.bSpecMapScale = m_specularMapScale != default_scale && bSpecMap;
-  info.bNormalMapScale = m_normalMapScale != default_scale && bNormalMap;
-  info.bReflectionMapScale = m_reflectionMapScale != default_scale && bReflectionMap;
-  info.bDiffuseMapOffset = m_diffuseMapOffset != default_offset && bDiffuseMap;
-  info.bSpecMapOffset = m_specularMapOffset != default_offset && bSpecMap;
-  info.bNormalMapOffset = m_normalMapOffset != default_offset && bNormalMap;
-  info.bReflectionMapOffset = m_reflectionMapOffset != default_offset && bReflectionMap;
+  info.bDiffuseMapScale = m_diffuse.scale != default_scale && bDiffuseMap;
+  info.bSpecMapScale = m_specular.scale != default_scale && bSpecMap;
+  info.bNormalMapScale = m_normal.scale != default_scale && bNormalMap;
+  info.bReflectionMapScale = m_reflection.scale != default_scale && bReflectionMap;
+  info.bDiffuseMapOffset = m_diffuse.offset != default_offset && bDiffuseMap;
+  info.bSpecMapOffset = m_specular.offset != default_offset && bSpecMap;
+  info.bNormalMapOffset = m_normal.offset != default_offset && bNormalMap;
+  info.bReflectionMapOffset = m_reflection.offset != default_offset && bReflectionMap;
   info.bAlphaTest = bAlphaTest;
   info.rasterMode = bAlphaBlend ? RasterMode::kAlphaBlend : RasterMode::kOpaque;
   info.renderPass = ri.renderPass;
@@ -359,15 +352,15 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
   }
 
   if (bDiffuseMap) {
-    pShader->setImageBinding("diffuseTexture", m_diffuseMap.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
+    pShader->setImageBinding("diffuseTexture", m_diffuse.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
   }
 
   if (bSpecMap) {
-    pShader->setImageBinding("specularTexture", m_specularMap.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
+    pShader->setImageBinding("specularTexture", m_specular.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
   }
 
   if (bNormalMap) {
-    pShader->setImageBinding("normalTexture", m_normalMap.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
+    pShader->setImageBinding("normalTexture", m_normal.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
   }
 
   if (bReflectionCubeMap) {
@@ -375,7 +368,7 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
   }
 
   if (bReflectionMap) {
-    pShader->setImageBinding("reflectionTexture", m_reflectionMap.get(), getContext().getSamplerManager()->DEFAULT_CLAMPED_SAMPLER);
+    pShader->setImageBinding("reflectionTexture", m_reflection.texture.get(), getContext().getSamplerManager()->DEFAULT_CLAMPED_SAMPLER);
   }
 
   ri.reflectedObjects.push_back(this);
@@ -406,28 +399,28 @@ bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector2* output) const
 {
   switch (value) {
   case ShaderValue::diffusetexture_scale:
-    *output = m_diffuseMapScale;
+    *output = m_diffuse.scale;
     return true;
   case ShaderValue::speculartexture_scale:
-    *output = m_specularMapScale;
+    *output = m_specular.scale;
     return true;
   case ShaderValue::reflectiontexture_scale:
-    *output = m_reflectionMapScale;
+    *output = m_reflection.scale;
     return true;
   case ShaderValue::normaltexture_scale:
-    *output = m_normalMapScale;
+    *output = m_normal.scale;
     return true;
   case ShaderValue::diffusetexture_offset:
-    *output = m_diffuseMapOffset;
+    *output = m_diffuse.offset;
     return true;
   case ShaderValue::speculartexture_offset:
-    *output = m_specularMapOffset;
+    *output = m_specular.offset;
     return true;
   case ShaderValue::reflectiontexture_offset:
-    *output = m_reflectionMapOffset;
+    *output = m_reflection.offset;
     return true;
   case ShaderValue::normaltexture_offset:
-    *output = m_normalMapOffset;
+    *output = m_normal.offset;
     return true;
   }
   return false;

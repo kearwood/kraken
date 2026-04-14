@@ -65,6 +65,15 @@ public:
     KRMATERIAL_ALPHA_MODE_BLENDTWOSIDE // Blended alpha rendered in two passes.  First pass renders backfaces; second pass renders frontfaces.
   } alpha_mode_type;
 
+  struct TransformedTexture
+  {
+    KRTextureBinding texture;
+    int texCoord = 0; // uv texture index
+    hydra::Vector2 scale{};
+    hydra::Vector2 offset{};
+    float rotation = 0;
+  };
+
   KRMaterial(KRContext& context, const char* szName);
   virtual ~KRMaterial();
 
@@ -101,24 +110,12 @@ public:
 
 private:
   std::string m_name;
-
-  KRTextureBinding m_ambientMap; // mtl map_Ka value
-  KRTextureBinding m_diffuseMap; // mtl map_Kd value
-  KRTextureBinding m_specularMap; // mtl map_Ks value
-  KRTextureBinding m_reflectionMap; // mtl refl value
+  TransformedTexture m_ambient;// mtl map_Ka value
+  TransformedTexture m_diffuse; // mtl map_Kd value
+  TransformedTexture m_specular; // mtl map_Ks value
+  TransformedTexture m_reflection; // mtl refl value
   KRTextureBinding m_reflectionCube;
-  KRTextureBinding m_normalMap; // mtl map_Normal value
-
-  hydra::Vector2 m_ambientMapScale;
-  hydra::Vector2 m_ambientMapOffset;
-  hydra::Vector2 m_diffuseMapScale;
-  hydra::Vector2 m_diffuseMapOffset;
-  hydra::Vector2 m_specularMapScale;
-  hydra::Vector2 m_specularMapOffset;
-  hydra::Vector2 m_reflectionMapScale;
-  hydra::Vector2 m_reflectionMapOffset;
-  hydra::Vector2 m_normalMapScale;
-  hydra::Vector2 m_normalMapOffset;
+  TransformedTexture m_normal; // mtl map_Normal value
 
   hydra::Vector3 m_ambientColor; // Ambient rgb
   hydra::Vector3 m_diffuseColor; // Diffuse rgb
