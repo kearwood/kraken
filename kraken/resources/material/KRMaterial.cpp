@@ -42,6 +42,60 @@ using namespace mimir;
 using namespace hydra;
 using namespace simdjson;
 
+namespace simdjson {
+
+template <typename builder_type>
+void tag_invoke(serialize_tag, builder_type& builder, const hydra::Vector2& vec)
+{
+  builder.start_array();
+  builder.append(vec.x);
+  builder.append_comma();
+  builder.append(vec.y);
+  builder.end_array();
+}
+
+template <typename builder_type>
+void tag_invoke(serialize_tag, builder_type& builder, const hydra::Vector3& vec)
+{
+  builder.start_array();
+  builder.append(vec.x);
+  builder.append_comma();
+  builder.append(vec.y);
+  builder.append_comma();
+  builder.append(vec.z);
+  builder.end_array();
+}
+
+template <typename builder_type>
+void tag_invoke(serialize_tag, builder_type& builder, const hydra::Vector4& vec)
+{
+  builder.start_array();
+  builder.append(vec.x);
+  builder.append_comma();
+  builder.append(vec.y);
+  builder.append_comma();
+  builder.append(vec.z);
+  builder.append_comma();
+  builder.append(vec.w);
+  builder.end_array();
+}
+
+template <typename builder_type>
+void tag_invoke(serialize_tag, builder_type& builder, const KRMaterial::TransformedTexture& texture)
+{
+  builder.start_object();
+  builder.append_key_value<"texture">(texture.texture.getName());
+  builder.append_comma();
+  builder.append_key_value<"offset">(texture.offset);
+  builder.append_comma();
+  builder.append_key_value<"scale">(texture.scale);
+  builder.append_comma();
+  builder.append_key_value<"rotation">(texture.rotation);
+  builder.end_object();
+}
+
+} // namespace simdjson
+
 KRMaterial::KRMaterial(KRContext& context, const char* name)
   : KRResource(context, name)
 {
@@ -53,6 +107,14 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
   simdjson::dom::parser parser;
   simdjson::dom::element jsonRoot;
   data->lock();
+
+  /*
+  char* str = (char*)data->getStart();
+  OutputDebugStringA("\n\n----====----\n");
+  OutputDebugStringA(str);
+  OutputDebugStringA("\n----====----\n\n");
+  */
+
   auto error = parser.parse((const char*)data->getStart(), data->getSize()).get(jsonRoot);
   data->unlock();
   if (error) {
@@ -80,7 +142,166 @@ bool KRMaterial::save(Block& data)
   simdjson::builder::string_builder sb;
   sb.start_object();
   sb.append_key_value<"name">(getName());
+  sb.append_comma();
+  switch (m_alphaMode) {
+  case KRMATERIAL_ALPHA_MODE_OPAQUE:
+    sb.append_key_value<"alphaMode">("opaque");
+    break;
+  case KRMATERIAL_ALPHA_MODE_BLEND:
+    sb.append_key_value<"alphaMode">("blend");
+    break;
+  case KRMATERIAL_ALPHA_MODE_TEST:
+    sb.append_key_value<"alphaMode">("test");
+    break;
+  }
+  sb.append_comma();
+  sb.append_key_value<"alphaCutoff">(m_alphaCutoff);
+  sb.append_comma();
+  sb.append_key_value<"ior">(m_ior);
+  sb.append_comma();
+  sb.append_key_value<"dispersion">(m_dispersion);
+  sb.append_comma();
+  switch (m_shadingModel) {
+  case KRMATERIAL_SHADING_MODEL_UNLIT:
+    sb.append_key_value<"shadingModel">("unlit");
+    break;
+  case KRMATERIAL_SHADING_MODEL_PBR:
+    sb.append_key_value<"shadingModel">("pbr");
+    break;
+  }
+
+  sb.append_comma();
+  sb.escape_and_append_with_quotes("baseColor");
+  sb.append_colon();
+
+  sb.start_object();
+  sb.append_key_value<"map">(m_baseColorTexture);
+  sb.append_comma();
+  sb.append_key_value<"factor">(m_baseColorFactor);
   sb.end_object();
+
+  sb.append_comma();
+
+  sb.escape_and_append_with_quotes("normal");
+  sb.append_colon();
+
+  sb.start_object();
+  sb.append_key_value<"map">(m_normalTexture);
+  sb.append_comma();
+  sb.append_key_value<"scale">(m_normalScale);
+  sb.end_object();
+
+  sb.append_comma();
+
+  sb.escape_and_append_with_quotes("emissive");
+  sb.append_colon();
+
+  sb.start_object();
+  sb.append_key_value<"map">(m_emissiveTexture);
+  sb.append_comma();
+  sb.append_key_value<"factor">(m_emissiveFactor);
+  sb.end_object();
+
+
+  sb.append_comma();
+
+
+  sb.escape_and_append_with_quotes("occlusion");
+  sb.append_colon();
+
+  sb.start_object();
+  sb.append_key_value<"map">(m_occlusionTexture);
+  sb.append_comma();
+  sb.append_key_value<"strength">(m_occlusionStrength);
+  sb.end_object();
+
+  sb.append_comma();
+
+  sb.escape_and_append_with_quotes("metalicRoughness");
+  sb.append_colon();
+
+  sb.start_object();
+  sb.append_key_value<"map">(m_metalicRoughness);
+  sb.append_comma();
+  sb.append_key_value<"metalicFactor">(m_metalicFactor);
+  sb.append_comma();
+  sb.append_key_value<"roughnessFactor">(m_roughnessFactor);
+  sb.end_object();
+
+  sb.append_comma();
+
+  sb.escape_and_append_with_quotes("anisotropy");
+  sb.append_colon();
+
+  sb.start_object();
+  sb.append_key_value<"map">(m_anisotropyTexture);
+  sb.append_comma();
+  sb.append_key_value<"strength">(m_anisotropyStrength);
+  sb.append_comma();
+  sb.append_key_value<"rotation">(m_anisotropyRotation);
+  sb.end_object();
+
+  sb.append_comma();
+
+  sb.escape_and_append_with_quotes("clearcoat");
+  sb.append_colon();
+
+  sb.start_object();
+  sb.append_key_value<"map">(m_clearcoatTexture);
+  sb.append_comma();
+  sb.append_key_value<"factor">(m_clearcoatFactor);
+  sb.append_comma();
+  sb.append_key_value<"roughnessMap">(m_clearcoatTexture);
+  sb.append_comma();
+  sb.append_key_value<"roughnessFactor">(m_anisotropyRotation);
+  sb.end_object();
+
+  sb.append_comma();
+
+  sb.escape_and_append_with_quotes("specular");
+  sb.append_colon();
+
+  sb.start_object();
+  sb.append_key_value<"map">(m_specularTexture);
+  sb.append_comma();
+  sb.append_key_value<"factor">(m_specularFactor);
+  sb.append_comma();
+  sb.append_key_value<"colorMap">(m_specularColorTexture);
+  sb.append_comma();
+  sb.append_key_value<"colorFactor">(m_specularColorFactor);
+  sb.end_object();
+
+  sb.append_comma();
+
+  sb.escape_and_append_with_quotes("thickness");
+  sb.append_colon();
+
+  sb.start_object();
+  sb.append_key_value<"map">(m_thicknessTexture);
+  sb.append_comma();
+  sb.append_key_value<"factor">(m_thicknessFactor);
+  sb.append_comma();
+  sb.append_key_value<"attenuiationDistance">(m_attenuationDistance);
+  sb.append_comma();
+  sb.append_key_value<"attenuationColor">(m_attenuationColor);
+  sb.end_object();
+
+
+  sb.append_comma();
+
+  sb.escape_and_append_with_quotes("transmission");
+  sb.append_colon();
+
+  sb.start_object();
+  sb.append_key_value<"map">(transmissionTexture);
+  sb.append_comma();
+  sb.append_key_value<"factor">(transmissionFactor);
+  sb.end_object();
+
+
+  sb.end_object();
+
+
   const char* str = nullptr;
   auto error = sb.c_str().get(str);
   if (error) {
@@ -88,6 +309,7 @@ bool KRMaterial::save(Block& data)
     // TODO - Report error
   }
   data.append(str);
+
   return true;
   /*
 

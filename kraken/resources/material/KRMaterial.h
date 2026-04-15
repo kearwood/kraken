@@ -64,6 +64,12 @@ public:
     KRMATERIAL_ALPHA_MODE_BLEND // Blended alpha with backface culling
   } alpha_mode_type;
 
+  typedef enum
+  {
+    KRMATERIAL_SHADING_MODEL_UNLIT,
+    KRMATERIAL_SHADING_MODEL_PBR
+  } shading_model_type;
+
   struct TransformedTexture
   {
     KRTextureBinding texture;
@@ -130,7 +136,7 @@ public:
   float m_alphaCutoff{ 0.5f };
   bool m_doubleSided{ false };
   float m_ior{ 1.5f };
-  bool m_isUnlit{ false };
+  shading_model_type m_shadingModel = { KRMATERIAL_SHADING_MODEL_PBR };
 
   TransformedTexture m_anisotropyTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_ANISOTROPY };
   float m_anisotropyStrength{ 0.f };
@@ -153,6 +159,9 @@ public:
   float m_thicknessFactor{ 0.f };
   float m_attenuationDistance{ std::numeric_limits<float>::max() };
   hydra::Vector3 m_attenuationColor{ 1.f, 1.f, 1.f };
+
+  TransformedTexture transmissionTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_TRANSMISSION };
+  float transmissionFactor = 0.f;
 
 private:
   bool getShaderValue(ShaderValue value, float* output) const final;
