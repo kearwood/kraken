@@ -119,7 +119,61 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
   data->unlock();
   if (error) {
     // TODO - Report and handle error
+    return;
   }
+
+  std::string_view alphaModeText;
+  error = jsonRoot["alphaMode"].get_string().get(alphaModeText);
+  if (error == simdjson::SUCCESS) {
+    if (alphaModeText.compare("opaque") == 0) {
+      m_alphaMode = KRMATERIAL_ALPHA_MODE_OPAQUE;
+    } else if (alphaModeText.compare("blend") == 0) {
+      m_alphaMode = KRMATERIAL_ALPHA_MODE_BLEND;
+    } else if (alphaModeText.compare("test") == 0) {
+      m_alphaMode = KRMATERIAL_ALPHA_MODE_TEST;
+    } else {
+      // TODO - Report and handle error
+    }
+  } else if (error != simdjson::EMPTY) {
+    // TODO - Report and handle error
+  }
+
+  double doubleVal = 0.5f;
+  error = jsonRoot["alphaCutoff"].get(doubleVal);
+  if (error != simdjson::EMPTY) {
+    // TODO - Report and handle error
+  }
+  m_alphaCutoff = doubleVal;
+
+  doubleVal = 1.5f;
+  error = jsonRoot["ior"].get(doubleVal);
+  if (error != simdjson::EMPTY) {
+    // TODO - Report and handle error
+  }
+  m_ior = doubleVal;
+
+  doubleVal = 0.f;
+  error = jsonRoot["dispersion"].get(doubleVal);
+  if (error != simdjson::EMPTY) {
+    // TODO - Report and handle error
+  }
+  m_dispersion = doubleVal;
+
+  m_shadingModel = KRMATERIAL_SHADING_MODEL_PBR;
+  std::string_view shadingModelText;
+  error = jsonRoot["shadingModel"].get_string().get(shadingModelText);
+  if (error == simdjson::SUCCESS) {
+    if (shadingModelText.compare("unlit") == 0) {
+      m_shadingModel = KRMATERIAL_SHADING_MODEL_UNLIT;
+    } else if (shadingModelText.compare("pbr") == 0) {
+      m_shadingModel = KRMATERIAL_SHADING_MODEL_PBR;
+    } else {
+      // TODO - Report and handle error
+    }
+  } else if (error != simdjson::EMPTY) {
+    // TODO - Report and handle error
+  }
+
 }
 
 KRMaterial::~KRMaterial()
@@ -293,87 +347,25 @@ bool KRMaterial::save(Block& data)
   sb.append_colon();
 
   sb.start_object();
-  sb.append_key_value<"map">(transmissionTexture);
+  sb.append_key_value<"map">(m_transmissionTexture);
   sb.append_comma();
-  sb.append_key_value<"factor">(transmissionFactor);
+  sb.append_key_value<"factor">(m_transmissionFactor);
   sb.end_object();
 
 
   sb.end_object();
 
 
+  std::string_view view;
   const char* str = nullptr;
-  auto error = sb.c_str().get(str);
+  auto error = sb.view().get(view);
   if (error) {
     return false;
     // TODO - Report error
   }
-  data.append(str);
+  data.append((void*) & view.front(), view.length());
 
   return true;
-  /*
-
-  std::stringstream stream;
-  stream.precision(std::numeric_limits<long double>::digits10);
-  stream.setf(std::ios::fixed, std::ios::floatfield);
-
-  stream << "newmtl " << getName();
-  stream << "\nka " << m_ambientColor.x << " " << m_ambientColor.y << " " << m_ambientColor.z;
-  stream << "\nkd " << m_diffuseColor.x << " " << m_diffuseColor.y << " " << m_diffuseColor.z;
-  stream << "\nks " << m_specularColor.x << " " << m_specularColor.y << " " << m_specularColor.z;
-  stream << "\nkr " << m_reflectionColor.x << " " << m_reflectionColor.y << " " << m_reflectionColor.z;
-  stream << "\nTr " << m_tr;
-  stream << "\nNs " << m_ns;
-  if (m_ambient.texture.isSet()) {
-    stream << "\nmap_Ka " << m_ambient.texture.getName() << ".pvr -s " << m_ambient.scale.x << " " << m_ambient.scale.y << " -o " << m_ambient.offset.x << " " << m_ambient.offset.y;
-  } else {
-    stream << "\n# map_Ka filename.pvr -s 1.0 1.0 -o 0.0 0.0";
-  }
-  if (m_diffuse.texture.isSet()) {
-    stream << "\nmap_Kd " << m_diffuse.texture.getName() << ".pvr -s " << m_diffuse.scale.x << " " << m_diffuse.scale.y << " -o " << m_diffuse.offset.x << " " << m_diffuse.offset.y;
-  } else {
-    stream << "\n# map_Kd filename.pvr -s 1.0 1.0 -o 0.0 0.0";
-  }
-  if (m_specular.texture.isSet()) {
-    stream << "\nmap_Ks " << m_specular.texture.getName() << ".pvr -s " << m_specular.scale.x << " " << m_specular.scale.y << " -o " << m_specular.offset.x << " " << m_specular.offset.y << "\n";
-  } else {
-    stream << "\n# map_Ks filename.pvr -s 1.0 1.0 -o 0.0 0.0";
-  }
-  if (m_normal.texture.isSet()) {
-    stream << "\nmap_Normal " << m_normal.texture.getName() << ".pvr -s " << m_normal.scale.x << " " << m_normal.scale.y << " -o " << m_normal.offset.x << " " << m_normal.offset.y;
-  } else {
-    stream << "\n# map_Normal filename.pvr -s 1.0 1.0 -o 0.0 0.0";
-  }
-  if (m_reflection.texture.isSet()) {
-    stream << "\nmap_Reflection " << m_reflection.texture.getName() << ".pvr -s " << m_reflection.scale.x << " " << m_reflection.scale.y << " -o " << m_reflection.offset.x << " " << m_reflection.offset.y;
-  } else {
-    stream << "\n# map_Reflection filename.pvr -s 1.0 1.0 -o 0.0 0.0";
-  }
-  if (m_reflectionCube.isSet()) {
-    stream << "\nmap_ReflectionCube " << m_reflectionCube.getName() << ".pvr";
-  } else {
-    stream << "\n# map_ReflectionCube cubemapname";
-  }
-  switch (m_alphaMode) {
-  case KRMATERIAL_ALPHA_MODE_OPAQUE:
-    stream << "\nalpha_mode opaque";
-    break;
-  case KRMATERIAL_ALPHA_MODE_TEST:
-    stream << "\nalpha_mode test";
-    break;
-  case KRMATERIAL_ALPHA_MODE_BLENDONESIDE:
-    stream << "\nalpha_mode blendoneside";
-    break;
-  case KRMATERIAL_ALPHA_MODE_BLENDTWOSIDE:
-    stream << "\nalpha_mode blendtwoside";
-    break;
-  }
-  stream << "\n# alpha_mode opaque, test, blendoneside, or blendtwoside";
-
-  stream << "\n";
-  data.append(stream.str());
-  return true;
-  */
 }
 
 /*
@@ -483,6 +475,7 @@ void KRMaterial::getResourceBindings(std::list<KRResourceBinding*>& bindings)
   bindings.push_back(&m_specularTexture.texture);
   bindings.push_back(&m_specularColorTexture.texture);
   bindings.push_back(&m_thicknessTexture.texture);
+  bindings.push_back(&m_transmissionTexture.texture);
 }
 
 kraken_stream_level KRMaterial::getStreamLevel()

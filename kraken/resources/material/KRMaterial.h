@@ -160,8 +160,8 @@ public:
   float m_attenuationDistance{ std::numeric_limits<float>::max() };
   hydra::Vector3 m_attenuationColor{ 1.f, 1.f, 1.f };
 
-  TransformedTexture transmissionTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_TRANSMISSION };
-  float transmissionFactor = 0.f;
+  TransformedTexture m_transmissionTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_TRANSMISSION };
+  float m_transmissionFactor = 0.f;
 
 private:
   bool getShaderValue(ShaderValue value, float* output) const final;
