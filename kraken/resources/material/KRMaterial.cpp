@@ -84,13 +84,13 @@ template <typename builder_type>
 void tag_invoke(serialize_tag, builder_type& builder, const KRMaterial::TransformedTexture& texture)
 {
   builder.start_object();
-  builder.append_key_value<"texture">(texture.texture.getName());
+  builder.template append_key_value<"texture">(texture.texture.getName());
   builder.append_comma();
-  builder.append_key_value<"offset">(texture.offset);
+  builder.template append_key_value<"offset">(texture.offset);
   builder.append_comma();
-  builder.append_key_value<"scale">(texture.scale);
+  builder.template append_key_value<"scale">(texture.scale);
   builder.append_comma();
-  builder.append_key_value<"rotation">(texture.rotation);
+  builder.template append_key_value<"rotation">(texture.rotation);
   builder.end_object();
 }
 
