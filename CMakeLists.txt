@@ -9,10 +9,6 @@ if (WIN32)
   string(REPLACE "/GR" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 endif()
 
-if (NOT WIN32 AND NOT ANDROID)
-  set(CMAKE_CXX_COMPILER "clang++")
-endif()
-
 project (Kraken)
 
 macro (add_sources)
