@@ -31,12 +31,12 @@
 
 #pragma once
 
-#include "vector2.h"
-#include "vector3.h"
-#include "matrix4.h"
+#include "hydra.h"
 #include <string>
 
 #include "../3rdparty/tinyxml2/tinyxml2.h"
+
+#include "simdjson.h"
 
 #define KRMIN(x,y) ((x) < (y) ? (x) : (y))
 #define KRMAX(x,y) ((x) > (y) ? (x) : (y))
@@ -53,3 +53,126 @@ const hydra::Vector3 getXMLAttribute(const std::string& base_name, ::tinyxml2::X
 const hydra::AABB getXMLAttribute(const std::string& base_name, ::tinyxml2::XMLElement* e, const hydra::AABB& default_value);
 } // namespace kraken
 
+namespace simdjson {
+
+template <typename builder_type>
+void tag_invoke(serialize_tag, builder_type& builder, const hydra::Vector2& vec)
+{
+  builder.start_array();
+  builder.append(vec.x);
+  builder.append_comma();
+  builder.append(vec.y);
+  builder.end_array();
+}
+
+template <typename simdjson_value>
+auto tag_invoke(deserialize_tag, simdjson_value &val, hydra::Vector2& vec)
+{
+  ondemand::array components;
+  auto error = val.get_array().get(components);
+  if (error) {
+    return error;
+  }
+  
+  ondemand::array_iterator itr;
+  if ((error = components.begin().get(itr)))
+  {
+    return error;
+  }
+  double v[2] = {0.f};
+  for(int i=0; i < 2; i++) {
+    if ((error = (*itr).get(v[i]))) {
+      return error;
+    }
+    ++itr;
+  }
+
+  vec[0] = v[0];
+  vec[1] = v[1];
+  return simdjson::SUCCESS;
+}
+
+template <typename builder_type>
+void tag_invoke(serialize_tag, builder_type& builder, const hydra::Vector3& vec)
+{
+  builder.start_array();
+  builder.append(vec.x);
+  builder.append_comma();
+  builder.append(vec.y);
+  builder.append_comma();
+  builder.append(vec.z);
+  builder.end_array();
+}
+
+
+template <typename simdjson_value>
+auto tag_invoke(deserialize_tag, simdjson_value &val, hydra::Vector3& vec) {
+  ondemand::array components;
+  auto error = val.get_array().get(components);
+  if (error) {
+    return error;
+  }
+  
+  ondemand::array_iterator itr;
+  if ((error = components.begin().get(itr)))
+  {
+    return error;
+  }
+  double v[3] = {0.f};
+  for(int i=0; i < 3; i++) {
+    if ((error = (*itr).get(v[i]))) {
+      return error;
+    }
+    ++itr;
+  }
+
+  vec[0] = v[0];
+  vec[1] = v[1];
+  vec[2] = v[2];
+  return simdjson::SUCCESS;
+}
+
+template <typename builder_type>
+void tag_invoke(serialize_tag, builder_type& builder, const hydra::Vector4& vec)
+{
+  builder.start_array();
+  builder.append(vec.x);
+  builder.append_comma();
+  builder.append(vec.y);
+  builder.append_comma();
+  builder.append(vec.z);
+  builder.append_comma();
+  builder.append(vec.w);
+  builder.end_array();
+}
+
+template <typename simdjson_value>
+auto tag_invoke(deserialize_tag, simdjson_value &val, hydra::Vector4& vec)
+{
+  ondemand::array components;
+  auto error = val.get_array().get(components);
+  if (error) {
+    return error;
+  }
+  
+  ondemand::array_iterator itr;
+  if ((error = components.begin().get(itr)))
+  {
+    return error;
+  }
+  double v[4] = {0.f};
+  for(int i=0; i < 4; i++) {
+    if ((error = (*itr).get(v[i]))) {
+      return error;
+    }
+    ++itr;
+  }
+
+  vec[0] = v[0];
+  vec[1] = v[1];
+  vec[2] = v[2];
+  vec[3] = v[3];
+  return simdjson::SUCCESS;
+}
+
+} // namespace simdjson

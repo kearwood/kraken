@@ -42,44 +42,8 @@ using namespace mimir;
 using namespace hydra;
 using namespace simdjson;
 
-namespace simdjson {
-
-template <typename builder_type>
-void tag_invoke(serialize_tag, builder_type& builder, const hydra::Vector2& vec)
+namespace simdjson
 {
-  builder.start_array();
-  builder.append(vec.x);
-  builder.append_comma();
-  builder.append(vec.y);
-  builder.end_array();
-}
-
-template <typename builder_type>
-void tag_invoke(serialize_tag, builder_type& builder, const hydra::Vector3& vec)
-{
-  builder.start_array();
-  builder.append(vec.x);
-  builder.append_comma();
-  builder.append(vec.y);
-  builder.append_comma();
-  builder.append(vec.z);
-  builder.end_array();
-}
-
-template <typename builder_type>
-void tag_invoke(serialize_tag, builder_type& builder, const hydra::Vector4& vec)
-{
-  builder.start_array();
-  builder.append(vec.x);
-  builder.append_comma();
-  builder.append(vec.y);
-  builder.append_comma();
-  builder.append(vec.z);
-  builder.append_comma();
-  builder.append(vec.w);
-  builder.end_array();
-}
-
 template <typename builder_type>
 void tag_invoke(serialize_tag, builder_type& builder, const KRMaterial::TransformedTexture& texture)
 {
@@ -94,6 +58,36 @@ void tag_invoke(serialize_tag, builder_type& builder, const KRMaterial::Transfor
   builder.end_object();
 }
 
+template <typename simdjson_value>
+auto tag_invoke(deserialize_tag, simdjson_value &val, KRMaterial::TransformedTexture& map) {
+  ondemand::object obj;
+  auto error = val.get_object().get(obj);
+  if (error) {
+    return error;
+  }
+  
+  std::string textureName;
+  if ((error = obj["texture"].get_string().get(textureName))) {
+    return error;
+  }
+  map.texture.set(textureName);
+  
+  if ((error = obj["offset"].get(map.offset))) {
+    return error;
+  }
+  
+  if ((error = obj["scale"].get(map.scale))) {
+    return error;
+  }
+  
+  double v;
+  if ((error = obj["rotation"].get(v))) {
+    return error;
+  }
+  map.rotation = v;
+  
+  return simdjson::SUCCESS;
+}
 } // namespace simdjson
 
 KRMaterial::KRMaterial(KRContext& context, const char* name)
@@ -104,9 +98,8 @@ KRMaterial::KRMaterial(KRContext& context, const char* name)
 KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
   : KRResource(context, name)
 {
-  simdjson::dom::parser parser;
-  simdjson::dom::element jsonRoot;
-  data->lock();
+  simdjson::ondemand::parser parser;
+  simdjson::ondemand::document doc;
 
   /*
   char* str = (char*)data->getStart();
@@ -115,8 +108,20 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
   OutputDebugStringA("\n----====----\n\n");
   */
 
-  auto error = parser.parse((const char*)data->getStart(), data->getSize()).get(jsonRoot);
-  data->unlock();
+  mimir::Block paddedData;
+  paddedData.append(*data);
+  paddedData.expand(SIMDJSON_PADDING);
+  paddedData.lock();
+  auto error = parser.iterate((const char*)paddedData.getStart(), paddedData.getSize()).get(doc);
+  paddedData.unlock();
+
+  if (error) {
+    // TODO - Report and handle error
+    return;
+  }
+  
+  ondemand::object jsonRoot;
+  error = doc.get_object().get(jsonRoot);
   if (error) {
     // TODO - Report and handle error
     return;
@@ -173,6 +178,24 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
   } else if (error != simdjson::EMPTY) {
     // TODO - Report and handle error
   }
+  
+  /*
+  simdjson::dom::object baseColorObj;
+  error = jsonRoot["baseColor"].get_object().get(baseColorObj);
+  if (error == simdjson::SUCCESS) {
+    
+    error = baseColorObj["map"].get<TransformedTexture>().get(m_baseColorTexture);
+    if (error != simdjson::EMPTY) {
+      // TODO - Report and handle error
+    }
+    error = baseColorObj["factor"].get<Vector4>().get(m_baseColorFactor);
+    if (error != simdjson::EMPTY) {
+      // TODO - Report and handle error
+    }
+  } else if (error != simdjson::EMPTY) {
+    // TODO - Report and handle error
+  }
+  */
 
 }
 
