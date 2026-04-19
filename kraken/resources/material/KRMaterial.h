@@ -82,6 +82,8 @@ public:
       : texture{ usage }
     {
     }
+    
+    simdjson::error_code parse(simdjson::ondemand::value &val);
   };
 
   KRMaterial(KRContext& context, const char* szName);

@@ -58,8 +58,10 @@ void tag_invoke(serialize_tag, builder_type& builder, const KRMaterial::Transfor
   builder.end_object();
 }
 
-template <typename simdjson_value>
-auto tag_invoke(deserialize_tag, simdjson_value &val, KRMaterial::TransformedTexture& map) {
+} // namespace simdjson
+
+simdjson::error_code KRMaterial::TransformedTexture::parse(simdjson::ondemand::value &val)
+{
   ondemand::object obj;
   auto error = val.get_object().get(obj);
   if (error) {
@@ -70,25 +72,23 @@ auto tag_invoke(deserialize_tag, simdjson_value &val, KRMaterial::TransformedTex
   if ((error = obj["texture"].get_string().get(textureName))) {
     return error;
   }
-  map.texture.set(textureName);
+  texture.set(textureName);
   
-  if ((error = obj["offset"].get(map.offset))) {
+  if ((error = obj["offset"].get(offset))) {
     return error;
   }
   
-  if ((error = obj["scale"].get(map.scale))) {
+  if ((error = obj["scale"].get(scale))) {
     return error;
   }
   
-  double v;
-  if ((error = obj["rotation"].get(v))) {
+  if ((error = obj["rotation"].get(rotation))) {
     return error;
   }
-  map.rotation = v;
   
   return simdjson::SUCCESS;
 }
-} // namespace simdjson
+
 
 KRMaterial::KRMaterial(KRContext& context, const char* name)
   : KRResource(context, name)
@@ -143,26 +143,20 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
     // TODO - Report and handle error
   }
 
-  double doubleVal = 0.5f;
-  error = jsonRoot["alphaCutoff"].get(doubleVal);
+  error = jsonRoot["alphaCutoff"].get(m_alphaCutoff);
   if (error != simdjson::EMPTY) {
     // TODO - Report and handle error
   }
-  m_alphaCutoff = doubleVal;
 
-  doubleVal = 1.5f;
-  error = jsonRoot["ior"].get(doubleVal);
+  error = jsonRoot["ior"].get(m_ior);
   if (error != simdjson::EMPTY) {
     // TODO - Report and handle error
   }
-  m_ior = doubleVal;
 
-  doubleVal = 0.f;
-  error = jsonRoot["dispersion"].get(doubleVal);
+  error = jsonRoot["dispersion"].get(m_dispersion);
   if (error != simdjson::EMPTY) {
     // TODO - Report and handle error
   }
-  m_dispersion = doubleVal;
 
   m_shadingModel = KRMATERIAL_SHADING_MODEL_PBR;
   std::string_view shadingModelText;
@@ -179,13 +173,17 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
     // TODO - Report and handle error
   }
   
-  /*
-  simdjson::dom::object baseColorObj;
+  simdjson::ondemand::object baseColorObj;
   error = jsonRoot["baseColor"].get_object().get(baseColorObj);
   if (error == simdjson::SUCCESS) {
-    
-    error = baseColorObj["map"].get<TransformedTexture>().get(m_baseColorTexture);
-    if (error != simdjson::EMPTY) {
+    simdjson::ondemand::value mapVal;
+    error = baseColorObj["map"].get(mapVal);
+    if (error == simdjson::SUCCESS) {
+      error = m_baseColorTexture.parse(mapVal);
+      if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+    } else if (error != simdjson::EMPTY) {
       // TODO - Report and handle error
     }
     error = baseColorObj["factor"].get<Vector4>().get(m_baseColorFactor);
@@ -195,7 +193,6 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
   } else if (error != simdjson::EMPTY) {
     // TODO - Report and handle error
   }
-  */
 
 }
 

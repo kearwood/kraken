@@ -55,6 +55,16 @@ const hydra::AABB getXMLAttribute(const std::string& base_name, ::tinyxml2::XMLE
 
 namespace simdjson {
 
+// 32-bit float simdjson deserialization helper
+template <typename simdjson_value>
+auto tag_invoke(deserialize_tag, simdjson_value &val, float& ret)
+{
+  double doubleRet = ret;
+  auto error = val.get(doubleRet);
+  ret = static_cast<float>(doubleRet);
+  return error;
+}
+
 template <typename builder_type>
 void tag_invoke(serialize_tag, builder_type& builder, const hydra::Vector2& vec)
 {
