@@ -273,17 +273,17 @@ KRMaterial* KRMaterialManager::loadMtl(Block* data)
             if (strcmp(szSymbol[0], "map_ka") == 0) {
               // pMaterial->setAmbientMap(szSymbol[1], texture_scale, texture_offset); // TODO - Map to modern material attributes. (Eg, unlit?)
             } else if (strcmp(szSymbol[0], "map_kd") == 0) {
-              pMaterial->m_baseColorTexture.texture.set(szSymbol[1]);
-              pMaterial->m_baseColorTexture.scale = texture_scale;
-              pMaterial->m_baseColorTexture.offset = texture_offset;
+              pMaterial->m_baseColorMap.texture.set(szSymbol[1]);
+              pMaterial->m_baseColorMap.scale = texture_scale;
+              pMaterial->m_baseColorMap.offset = texture_offset;
             } else if (strcmp(szSymbol[0], "map_ks") == 0) {
               pMaterial->m_specularColorTexture.texture.set(szSymbol[1]);
               pMaterial->m_specularColorTexture.scale = texture_scale;
               pMaterial->m_specularColorTexture.offset = texture_offset;
             } else if (strcmp(szSymbol[0], "map_normal") == 0) {
-              pMaterial->m_normalTexture.texture.set(szSymbol[1]);
-              pMaterial->m_normalTexture.scale = texture_scale;
-              pMaterial->m_normalTexture.offset = texture_offset;
+              pMaterial->m_normalMap.texture.set(szSymbol[1]);
+              pMaterial->m_normalMap.scale = texture_scale;
+              pMaterial->m_normalMap.offset = texture_offset;
             } else if (strcmp(szSymbol[0], "map_reflection") == 0) {
               // pMaterial->setReflectionMap(szSymbol[1], texture_scale, texture_offset); // TODO - Map to modern material attributes.
             } else if (strcmp(szSymbol[0], "map_reflectioncube") == 0) {

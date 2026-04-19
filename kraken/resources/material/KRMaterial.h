@@ -70,7 +70,7 @@ public:
     KRMATERIAL_SHADING_MODEL_PBR
   } shading_model_type;
 
-  struct TransformedTexture
+  struct TextureMap
   {
     KRTextureBinding texture;
     int texCoord{ 0 };
@@ -78,7 +78,7 @@ public:
     hydra::Vector2 offset{ 0.f, 0.f };
     float rotation{ 0.f };
 
-    TransformedTexture(KRTexture::texture_usage_t usage)
+    TextureMap(KRTexture::texture_usage_t usage)
       : texture{ usage }
     {
     }
@@ -90,8 +90,8 @@ public:
   KRMaterial(KRContext& context, std::string name, mimir::Block* data);
   virtual ~KRMaterial();
 
-  virtual std::string getExtension();
-  virtual bool save(mimir::Block& data);
+  virtual std::string getExtension() override;
+  virtual bool save(mimir::Block& data) override;
 
   /*
   void setAmbientMap(std::string texture_name, hydra::Vector2 texture_scale, hydra::Vector2 texture_offset);
@@ -123,15 +123,15 @@ public:
   virtual void getResourceBindings(std::list<KRResourceBinding*>& bindings) override;
 
   // --- Serialized Material Attributes ---
-  TransformedTexture m_baseColorTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_BASE_COLOR };
+  TextureMap m_baseColorMap{ KRTexture::TEXTURE_USAGE_MATERIAL_BASE_COLOR };
   hydra::Vector4 m_baseColorFactor{ 1.f, 1.f, 1.f, 1.f };
-  TransformedTexture m_normalTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_NORMAL };
+  TextureMap m_normalMap{ KRTexture::TEXTURE_USAGE_MATERIAL_NORMAL };
   float m_normalScale{ 1.f };
-  TransformedTexture m_emissiveTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_EMISSIVE };
+  TextureMap m_emissiveMap{ KRTexture::TEXTURE_USAGE_MATERIAL_EMISSIVE };
   hydra::Vector3 m_emissiveFactor{ 0.f, 0.f, 0.f };
-  TransformedTexture m_occlusionTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_OCCLUSION };
+  TextureMap m_occlusionMap{ KRTexture::TEXTURE_USAGE_MATERIAL_OCCLUSION };
   float m_occlusionStrength{ 1.f };
-  TransformedTexture m_metalicRoughness{ KRTexture::TEXTURE_USAGE_MATERIAL_METALIC_ROUGHNESS };
+  TextureMap m_metalicMap{ KRTexture::TEXTURE_USAGE_MATERIAL_METALIC_ROUGHNESS };
   float m_metalicFactor{ 1.f };
   float m_roughnessFactor{ 1.f };
   alpha_mode_type m_alphaMode{ KRMATERIAL_ALPHA_MODE_OPAQUE };
@@ -140,29 +140,29 @@ public:
   float m_ior{ 1.5f };
   shading_model_type m_shadingModel = { KRMATERIAL_SHADING_MODEL_PBR };
 
-  TransformedTexture m_anisotropyTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_ANISOTROPY };
+  TextureMap m_anisotropyMap{ KRTexture::TEXTURE_USAGE_MATERIAL_ANISOTROPY };
   float m_anisotropyStrength{ 0.f };
   float m_anisotropyRotation{ 0.f };
 
-  TransformedTexture m_clearcoatTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_CLEARCOAT };
+  TextureMap m_clearcoatMap{ KRTexture::TEXTURE_USAGE_MATERIAL_CLEARCOAT };
   float m_clearcoatFactor{ 0.f };
-  TransformedTexture m_clearcoatRoughnessTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_CLEARCOAT_ROUGHNESS };
+  TextureMap m_clearcoatRoughnessMap{ KRTexture::TEXTURE_USAGE_MATERIAL_CLEARCOAT_ROUGHNESS };
   float m_clearcoatRoughnessFactor{ 0.f };
-  TransformedTexture m_clearcoatNormalTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_CLEARCOAT_NORMAL };
+  TextureMap m_clearcoatNormalMap{ KRTexture::TEXTURE_USAGE_MATERIAL_CLEARCOAT_NORMAL };
 
   float m_dispersion{ 0.f };
 
-  TransformedTexture m_specularTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_SPECULAR };
+  TextureMap m_specularTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_SPECULAR };
   float m_specularFactor{ 1.f };
-  TransformedTexture m_specularColorTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_SPECULAR_COLOR };
+  TextureMap m_specularColorTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_SPECULAR_COLOR };
   hydra::Vector3 m_specularColorFactor{ 1.f, 1.f, 1.f };
 
-  TransformedTexture m_thicknessTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_THICKNESS };
+  TextureMap m_thicknessTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_THICKNESS };
   float m_thicknessFactor{ 0.f };
   float m_attenuationDistance{ std::numeric_limits<float>::max() };
   hydra::Vector3 m_attenuationColor{ 1.f, 1.f, 1.f };
 
-  TransformedTexture m_transmissionTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_TRANSMISSION };
+  TextureMap m_transmissionTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_TRANSMISSION };
   float m_transmissionFactor = 0.f;
 
 private:

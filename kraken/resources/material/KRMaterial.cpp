@@ -45,7 +45,7 @@ using namespace simdjson;
 namespace simdjson
 {
 template <typename builder_type>
-void tag_invoke(serialize_tag, builder_type& builder, const KRMaterial::TransformedTexture& texture)
+void tag_invoke(serialize_tag, builder_type& builder, const KRMaterial::TextureMap& texture)
 {
   builder.start_object();
   builder.template append_key_value<"texture">(texture.texture.getName());
@@ -60,7 +60,7 @@ void tag_invoke(serialize_tag, builder_type& builder, const KRMaterial::Transfor
 
 } // namespace simdjson
 
-simdjson::error_code KRMaterial::TransformedTexture::parse(simdjson::ondemand::value &val)
+simdjson::error_code KRMaterial::TextureMap::parse(simdjson::ondemand::value &val)
 {
   ondemand::object obj;
   auto error = val.get_object().get(obj);
@@ -100,7 +100,13 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
 {
   simdjson::ondemand::parser parser;
   simdjson::ondemand::document doc;
-
+  
+  auto tryJson = [](simdjson::error_code error) {
+    if (error != simdjson::EMPTY) {
+      // TODO - Report and handle error
+    }
+  };
+  
   /*
   char* str = (char*)data->getStart();
   OutputDebugStringA("\n\n----====----\n");
@@ -142,21 +148,10 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
   } else if (error != simdjson::EMPTY) {
     // TODO - Report and handle error
   }
-
-  error = jsonRoot["alphaCutoff"].get(m_alphaCutoff);
-  if (error != simdjson::EMPTY) {
-    // TODO - Report and handle error
-  }
-
-  error = jsonRoot["ior"].get(m_ior);
-  if (error != simdjson::EMPTY) {
-    // TODO - Report and handle error
-  }
-
-  error = jsonRoot["dispersion"].get(m_dispersion);
-  if (error != simdjson::EMPTY) {
-    // TODO - Report and handle error
-  }
+  
+  tryJson(jsonRoot["alphaCutoff"].get(m_alphaCutoff));
+  tryJson(jsonRoot["ior"].get(m_ior));
+  tryJson(jsonRoot["dispersion"].get(m_dispersion));
 
   m_shadingModel = KRMATERIAL_SHADING_MODEL_PBR;
   std::string_view shadingModelText;
@@ -179,17 +174,11 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
     simdjson::ondemand::value mapVal;
     error = baseColorObj["map"].get(mapVal);
     if (error == simdjson::SUCCESS) {
-      error = m_baseColorTexture.parse(mapVal);
-      if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
-      }
+      tryJson(m_baseColorMap.parse(mapVal));
     } else if (error != simdjson::EMPTY) {
       // TODO - Report and handle error
     }
-    error = baseColorObj["factor"].get<Vector4>().get(m_baseColorFactor);
-    if (error != simdjson::EMPTY) {
-      // TODO - Report and handle error
-    }
+    tryJson(baseColorObj["factor"].get<Vector4>().get(m_baseColorFactor));
   } else if (error != simdjson::EMPTY) {
     // TODO - Report and handle error
   }
@@ -208,7 +197,7 @@ std::string KRMaterial::getExtension()
 
 bool KRMaterial::needsVertexTangents()
 {
-  return m_normalTexture.texture.isSet();
+  return m_normalMap.texture.isSet();
 }
 
 bool KRMaterial::save(Block& data)
@@ -249,7 +238,7 @@ bool KRMaterial::save(Block& data)
   sb.append_colon();
 
   sb.start_object();
-  sb.append_key_value<"map">(m_baseColorTexture);
+  sb.append_key_value<"map">(m_baseColorMap);
   sb.append_comma();
   sb.append_key_value<"factor">(m_baseColorFactor);
   sb.end_object();
@@ -260,7 +249,7 @@ bool KRMaterial::save(Block& data)
   sb.append_colon();
 
   sb.start_object();
-  sb.append_key_value<"map">(m_normalTexture);
+  sb.append_key_value<"map">(m_normalMap);
   sb.append_comma();
   sb.append_key_value<"scale">(m_normalScale);
   sb.end_object();
@@ -271,7 +260,7 @@ bool KRMaterial::save(Block& data)
   sb.append_colon();
 
   sb.start_object();
-  sb.append_key_value<"map">(m_emissiveTexture);
+  sb.append_key_value<"map">(m_emissiveMap);
   sb.append_comma();
   sb.append_key_value<"factor">(m_emissiveFactor);
   sb.end_object();
@@ -284,7 +273,7 @@ bool KRMaterial::save(Block& data)
   sb.append_colon();
 
   sb.start_object();
-  sb.append_key_value<"map">(m_occlusionTexture);
+  sb.append_key_value<"map">(m_occlusionMap);
   sb.append_comma();
   sb.append_key_value<"strength">(m_occlusionStrength);
   sb.end_object();
@@ -295,7 +284,7 @@ bool KRMaterial::save(Block& data)
   sb.append_colon();
 
   sb.start_object();
-  sb.append_key_value<"map">(m_metalicRoughness);
+  sb.append_key_value<"map">(m_metalicMap);
   sb.append_comma();
   sb.append_key_value<"metalicFactor">(m_metalicFactor);
   sb.append_comma();
@@ -308,7 +297,7 @@ bool KRMaterial::save(Block& data)
   sb.append_colon();
 
   sb.start_object();
-  sb.append_key_value<"map">(m_anisotropyTexture);
+  sb.append_key_value<"map">(m_anisotropyMap);
   sb.append_comma();
   sb.append_key_value<"strength">(m_anisotropyStrength);
   sb.append_comma();
@@ -321,11 +310,11 @@ bool KRMaterial::save(Block& data)
   sb.append_colon();
 
   sb.start_object();
-  sb.append_key_value<"map">(m_clearcoatTexture);
+  sb.append_key_value<"map">(m_clearcoatMap);
   sb.append_comma();
   sb.append_key_value<"factor">(m_clearcoatFactor);
   sb.append_comma();
-  sb.append_key_value<"roughnessMap">(m_clearcoatTexture);
+  sb.append_key_value<"roughnessMap">(m_clearcoatMap);
   sb.append_comma();
   sb.append_key_value<"roughnessFactor">(m_anisotropyRotation);
   sb.end_object();
@@ -483,15 +472,15 @@ void KRMaterial::getResourceBindings(std::list<KRResourceBinding*>& bindings)
 {
   KRResource::getResourceBindings(bindings);
 
-  bindings.push_back(&m_baseColorTexture.texture);
-  bindings.push_back(&m_normalTexture.texture);
-  bindings.push_back(&m_emissiveTexture.texture);
-  bindings.push_back(&m_occlusionTexture.texture);
-  bindings.push_back(&m_metalicRoughness.texture);
-  bindings.push_back(&m_anisotropyTexture.texture);
-  bindings.push_back(&m_clearcoatTexture.texture);
-  bindings.push_back(&m_clearcoatRoughnessTexture.texture);
-  bindings.push_back(&m_clearcoatNormalTexture.texture);
+  bindings.push_back(&m_baseColorMap.texture);
+  bindings.push_back(&m_normalMap.texture);
+  bindings.push_back(&m_emissiveMap.texture);
+  bindings.push_back(&m_occlusionMap.texture);
+  bindings.push_back(&m_metalicMap.texture);
+  bindings.push_back(&m_anisotropyMap.texture);
+  bindings.push_back(&m_clearcoatMap.texture);
+  bindings.push_back(&m_clearcoatRoughnessMap.texture);
+  bindings.push_back(&m_clearcoatNormalMap.texture);
   bindings.push_back(&m_specularTexture.texture);
   bindings.push_back(&m_specularColorTexture.texture);
   bindings.push_back(&m_thicknessTexture.texture);
@@ -502,40 +491,40 @@ kraken_stream_level KRMaterial::getStreamLevel()
 {
   kraken_stream_level stream_level = kraken_stream_level::STREAM_LEVEL_IN_HQ;
 
-  if (m_baseColorTexture.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_baseColorTexture.texture.get()->getStreamLevel());
+  if (m_baseColorMap.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_baseColorMap.texture.get()->getStreamLevel());
   }
 
-  if (m_normalTexture.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_normalTexture.texture.get()->getStreamLevel());
+  if (m_normalMap.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_normalMap.texture.get()->getStreamLevel());
   }
 
-  if (m_occlusionTexture.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_occlusionTexture.texture.get()->getStreamLevel());
+  if (m_occlusionMap.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_occlusionMap.texture.get()->getStreamLevel());
   }
 
-  if (m_metalicRoughness.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_metalicRoughness.texture.get()->getStreamLevel());
+  if (m_metalicMap.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_metalicMap.texture.get()->getStreamLevel());
   }
 
-  if (m_anisotropyTexture.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_anisotropyTexture.texture.get()->getStreamLevel());
+  if (m_anisotropyMap.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_anisotropyMap.texture.get()->getStreamLevel());
   }
 
-  if (m_clearcoatTexture.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_clearcoatTexture.texture.get()->getStreamLevel());
+  if (m_clearcoatMap.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_clearcoatMap.texture.get()->getStreamLevel());
   }
 
-  if (m_clearcoatTexture.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_clearcoatTexture.texture.get()->getStreamLevel());
+  if (m_clearcoatMap.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_clearcoatMap.texture.get()->getStreamLevel());
   }
 
-  if (m_clearcoatRoughnessTexture.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_clearcoatRoughnessTexture.texture.get()->getStreamLevel());
+  if (m_clearcoatRoughnessMap.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_clearcoatRoughnessMap.texture.get()->getStreamLevel());
   }
 
-  if (m_clearcoatNormalTexture.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_clearcoatNormalTexture.texture.get()->getStreamLevel());
+  if (m_clearcoatNormalMap.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_clearcoatNormalMap.texture.get()->getStreamLevel());
   }
 
   if (m_specularTexture.texture.isBound()) {
@@ -561,8 +550,8 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
   Vector2 default_offset = Vector2::Zero();
 
   bool bHasReflection = m_roughnessFactor > 0.f;
-  bool bDiffuseMap = m_baseColorTexture.texture.isBound() && ri.camera->settings.bEnableDiffuseMap;
-  bool bNormalMap = m_normalTexture.texture.isBound() && ri.camera->settings.bEnableNormalMap;
+  bool bDiffuseMap = m_baseColorMap.texture.isBound() && ri.camera->settings.bEnableDiffuseMap;
+  bool bNormalMap = m_normalMap.texture.isBound() && ri.camera->settings.bEnableNormalMap;
   bool bSpecMap = false;
   bool bReflectionMap = false;
   bool bReflectionCubeMap = false;
@@ -584,13 +573,13 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
   info.bReflectionMap = bReflectionMap;
   info.bReflectionCubeMap = bReflectionCubeMap;
   info.bLightMap = bLightMap;
-  info.bDiffuseMapScale = m_baseColorTexture.scale != default_scale && bDiffuseMap;
+  info.bDiffuseMapScale = m_baseColorMap.scale != default_scale && bDiffuseMap;
   info.bSpecMapScale = false;
-  info.bNormalMapScale = m_normalTexture.scale != default_scale && bNormalMap;
+  info.bNormalMapScale = m_normalMap.scale != default_scale && bNormalMap;
   info.bReflectionMapScale = false;
   info.bDiffuseMapOffset = false;
   info.bSpecMapOffset = false;
-  info.bNormalMapOffset = m_normalTexture.offset != default_offset && bNormalMap;
+  info.bNormalMapOffset = m_normalMap.offset != default_offset && bNormalMap;
   info.bReflectionMapOffset = false;
   info.bAlphaTest = bAlphaTest;
   info.rasterMode = bAlphaBlend ? RasterMode::kAlphaBlend : RasterMode::kOpaque;
@@ -634,7 +623,7 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
   }
 
   if (bDiffuseMap) {
-    pShader->setImageBinding("diffuseTexture", m_baseColorTexture.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
+    pShader->setImageBinding("diffuseTexture", m_baseColorMap.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
   }
 
   if (bSpecMap) {
@@ -642,7 +631,7 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
   }
 
   if (bNormalMap) {
-    pShader->setImageBinding("normalTexture", m_normalTexture.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
+    pShader->setImageBinding("normalTexture", m_normalMap.texture.get(), getContext().getSamplerManager()->DEFAULT_WRAPPING_SAMPLER);
   }
 
   if (bReflectionCubeMap) {
@@ -677,22 +666,22 @@ bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector2* output) const
 {
   switch (value) {
   case ShaderValue::diffusetexture_scale:
-    *output = m_baseColorTexture.scale;
+    *output = m_baseColorMap.scale;
     return true;
   case ShaderValue::speculartexture_scale:
     *output = m_specularColorTexture.scale;
     return true;
   case ShaderValue::normaltexture_scale:
-    *output = m_normalTexture.scale;
+    *output = m_normalMap.scale;
     return true;
   case ShaderValue::diffusetexture_offset:
-    *output = m_baseColorTexture.offset;
+    *output = m_baseColorMap.offset;
     return true;
   case ShaderValue::speculartexture_offset:
     *output = m_specularColorTexture.offset;
     return true;
   case ShaderValue::normaltexture_offset:
-    *output = m_normalTexture.offset;
+    *output = m_normalMap.offset;
     return true;
   }
   return false;
