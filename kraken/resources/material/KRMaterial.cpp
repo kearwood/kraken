@@ -168,21 +168,194 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
     // TODO - Report and handle error
   }
   
-  simdjson::ondemand::object baseColorObj;
-  error = jsonRoot["baseColor"].get_object().get(baseColorObj);
-  if (error == simdjson::SUCCESS) {
-    simdjson::ondemand::value mapVal;
-    error = baseColorObj["map"].get(mapVal);
+  {
+    simdjson::ondemand::object baseColorObj;
+    error = jsonRoot["baseColor"].get_object().get(baseColorObj);
     if (error == simdjson::SUCCESS) {
-      tryJson(m_baseColorMap.parse(mapVal));
+      simdjson::ondemand::value mapVal;
+      error = baseColorObj["map"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_baseColorMap.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(baseColorObj["factor"].get(m_baseColorFactor));
     } else if (error != simdjson::EMPTY) {
       // TODO - Report and handle error
     }
-    tryJson(baseColorObj["factor"].get<Vector4>().get(m_baseColorFactor));
-  } else if (error != simdjson::EMPTY) {
-    // TODO - Report and handle error
+  }
+  
+  {
+    simdjson::ondemand::object normalObj;
+    error = jsonRoot["normal"].get_object().get(normalObj);
+    if (error == simdjson::SUCCESS) {
+      simdjson::ondemand::value mapVal;
+      error = normalObj["map"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_normalMap.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(normalObj["scale"].get(m_normalScale));
+    } else if (error != simdjson::EMPTY) {
+      // TODO - Report and handle error
+    }
+  }
+  
+  {
+    simdjson::ondemand::object emissiveObj;
+    error = jsonRoot["emissive"].get_object().get(emissiveObj);
+    if (error == simdjson::SUCCESS) {
+      simdjson::ondemand::value mapVal;
+      error = emissiveObj["map"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_emissiveMap.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(emissiveObj["factor"].get(m_emissiveFactor));
+    } else if (error != simdjson::EMPTY) {
+      // TODO - Report and handle error
+    }
+  }
+  
+  {
+    simdjson::ondemand::object occlusionObj;
+    error = jsonRoot["occlusion"].get_object().get(occlusionObj);
+    if (error == simdjson::SUCCESS) {
+      simdjson::ondemand::value mapVal;
+      error = occlusionObj["map"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_occlusionMap.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(occlusionObj["strength"].get(m_occlusionStrength));
+    } else if (error != simdjson::EMPTY) {
+      // TODO - Report and handle error
+    }
+  }
+  
+  {
+    simdjson::ondemand::object metalicRoughnessObj;
+    error = jsonRoot["metalicRoughness"].get_object().get(metalicRoughnessObj);
+    if (error == simdjson::SUCCESS) {
+      simdjson::ondemand::value mapVal;
+      error = metalicRoughnessObj["map"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_metalicRoughnessMap.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(metalicRoughnessObj["metalicFactor"].get(m_metalicFactor));
+      tryJson(metalicRoughnessObj["roughnessFactor"].get(m_roughnessFactor));
+    } else if (error != simdjson::EMPTY) {
+      // TODO - Report and handle error
+    }
   }
 
+  {
+    simdjson::ondemand::object anisotropyObj;
+    error = jsonRoot["anisotropy"].get_object().get(anisotropyObj);
+    if (error == simdjson::SUCCESS) {
+      simdjson::ondemand::value mapVal;
+      error = anisotropyObj["map"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_anisotropyMap.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(anisotropyObj["strength"].get(m_anisotropyStrength));
+      tryJson(anisotropyObj["rotation"].get(m_anisotropyRotation));
+    } else if (error != simdjson::EMPTY) {
+      // TODO - Report and handle error
+    }
+  }
+  
+  {
+    simdjson::ondemand::object clearcoatObj;
+    error = jsonRoot["clearcoat"].get_object().get(clearcoatObj);
+    if (error == simdjson::SUCCESS) {
+      simdjson::ondemand::value mapVal;
+      error = clearcoatObj["map"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_clearcoatMap.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(clearcoatObj["factor"].get(m_clearcoatFactor));
+      error = clearcoatObj["roughnessMap"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_clearcoatRoughnessMap.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(clearcoatObj["roughnessFactor"].get(m_clearcoatRoughnessFactor));
+    } else if (error != simdjson::EMPTY) {
+      // TODO - Report and handle error
+    }
+  }
+  
+  {
+    simdjson::ondemand::object specularObj;
+    error = jsonRoot["specular"].get_object().get(specularObj);
+    if (error == simdjson::SUCCESS) {
+      simdjson::ondemand::value mapVal;
+      error = specularObj["map"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_specularMap.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(specularObj["factor"].get(m_specularFactor));
+      error = specularObj["colorMap"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_specularColorTexture.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(specularObj["colorFactor"].get(m_specularColorFactor));
+    } else if (error != simdjson::EMPTY) {
+      // TODO - Report and handle error
+    }
+  }
+  
+  {
+    simdjson::ondemand::object thicknessObj;
+    error = jsonRoot["thickness"].get_object().get(thicknessObj);
+    if (error == simdjson::SUCCESS) {
+      simdjson::ondemand::value mapVal;
+      error = thicknessObj["map"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_thicknessMap.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(thicknessObj["factor"].get(m_thicknessFactor));
+      tryJson(thicknessObj["attenuiationDistance"].get(m_attenuationDistance));
+      tryJson(thicknessObj["attenuationColor"].get(m_attenuationColor));
+    } else if (error != simdjson::EMPTY) {
+      // TODO - Report and handle error
+    }
+  }
+  
+  {
+    simdjson::ondemand::object transmissionObj;
+    error = jsonRoot["transmission"].get_object().get(transmissionObj);
+    if (error == simdjson::SUCCESS) {
+      simdjson::ondemand::value mapVal;
+      error = transmissionObj["map"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_transmissionMap.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(transmissionObj["factor"].get(m_transmissionFactor));
+    } else if (error != simdjson::EMPTY) {
+      // TODO - Report and handle error
+    }
+  }
+  
 }
 
 KRMaterial::~KRMaterial()
@@ -284,7 +457,7 @@ bool KRMaterial::save(Block& data)
   sb.append_colon();
 
   sb.start_object();
-  sb.append_key_value<"map">(m_metalicMap);
+  sb.append_key_value<"map">(m_metalicRoughnessMap);
   sb.append_comma();
   sb.append_key_value<"metalicFactor">(m_metalicFactor);
   sb.append_comma();
@@ -314,9 +487,9 @@ bool KRMaterial::save(Block& data)
   sb.append_comma();
   sb.append_key_value<"factor">(m_clearcoatFactor);
   sb.append_comma();
-  sb.append_key_value<"roughnessMap">(m_clearcoatMap);
+  sb.append_key_value<"roughnessMap">(m_clearcoatRoughnessMap);
   sb.append_comma();
-  sb.append_key_value<"roughnessFactor">(m_anisotropyRotation);
+  sb.append_key_value<"roughnessFactor">(m_clearcoatRoughnessFactor);
   sb.end_object();
 
   sb.append_comma();
@@ -325,7 +498,7 @@ bool KRMaterial::save(Block& data)
   sb.append_colon();
 
   sb.start_object();
-  sb.append_key_value<"map">(m_specularTexture);
+  sb.append_key_value<"map">(m_specularMap);
   sb.append_comma();
   sb.append_key_value<"factor">(m_specularFactor);
   sb.append_comma();
@@ -340,7 +513,7 @@ bool KRMaterial::save(Block& data)
   sb.append_colon();
 
   sb.start_object();
-  sb.append_key_value<"map">(m_thicknessTexture);
+  sb.append_key_value<"map">(m_thicknessMap);
   sb.append_comma();
   sb.append_key_value<"factor">(m_thicknessFactor);
   sb.append_comma();
@@ -356,7 +529,7 @@ bool KRMaterial::save(Block& data)
   sb.append_colon();
 
   sb.start_object();
-  sb.append_key_value<"map">(m_transmissionTexture);
+  sb.append_key_value<"map">(m_transmissionMap);
   sb.append_comma();
   sb.append_key_value<"factor">(m_transmissionFactor);
   sb.end_object();
@@ -476,15 +649,15 @@ void KRMaterial::getResourceBindings(std::list<KRResourceBinding*>& bindings)
   bindings.push_back(&m_normalMap.texture);
   bindings.push_back(&m_emissiveMap.texture);
   bindings.push_back(&m_occlusionMap.texture);
-  bindings.push_back(&m_metalicMap.texture);
+  bindings.push_back(&m_metalicRoughnessMap.texture);
   bindings.push_back(&m_anisotropyMap.texture);
   bindings.push_back(&m_clearcoatMap.texture);
   bindings.push_back(&m_clearcoatRoughnessMap.texture);
   bindings.push_back(&m_clearcoatNormalMap.texture);
-  bindings.push_back(&m_specularTexture.texture);
+  bindings.push_back(&m_specularMap.texture);
   bindings.push_back(&m_specularColorTexture.texture);
-  bindings.push_back(&m_thicknessTexture.texture);
-  bindings.push_back(&m_transmissionTexture.texture);
+  bindings.push_back(&m_thicknessMap.texture);
+  bindings.push_back(&m_transmissionMap.texture);
 }
 
 kraken_stream_level KRMaterial::getStreamLevel()
@@ -503,8 +676,8 @@ kraken_stream_level KRMaterial::getStreamLevel()
     stream_level = KRMIN(stream_level, m_occlusionMap.texture.get()->getStreamLevel());
   }
 
-  if (m_metalicMap.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_metalicMap.texture.get()->getStreamLevel());
+  if (m_metalicRoughnessMap.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_metalicRoughnessMap.texture.get()->getStreamLevel());
   }
 
   if (m_anisotropyMap.texture.isBound()) {
@@ -527,16 +700,16 @@ kraken_stream_level KRMaterial::getStreamLevel()
     stream_level = KRMIN(stream_level, m_clearcoatNormalMap.texture.get()->getStreamLevel());
   }
 
-  if (m_specularTexture.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_specularTexture.texture.get()->getStreamLevel());
+  if (m_specularMap.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_specularMap.texture.get()->getStreamLevel());
   }
 
   if (m_specularColorTexture.texture.isBound()) {
     stream_level = KRMIN(stream_level, m_specularColorTexture.texture.get()->getStreamLevel());
   }
 
-  if (m_thicknessTexture.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_thicknessTexture.texture.get()->getStreamLevel());
+  if (m_thicknessMap.texture.isBound()) {
+    stream_level = KRMIN(stream_level, m_thicknessMap.texture.get()->getStreamLevel());
   }
 
   return stream_level;

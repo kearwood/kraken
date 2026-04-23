@@ -131,7 +131,7 @@ public:
   hydra::Vector3 m_emissiveFactor{ 0.f, 0.f, 0.f };
   TextureMap m_occlusionMap{ KRTexture::TEXTURE_USAGE_MATERIAL_OCCLUSION };
   float m_occlusionStrength{ 1.f };
-  TextureMap m_metalicMap{ KRTexture::TEXTURE_USAGE_MATERIAL_METALIC_ROUGHNESS };
+  TextureMap m_metalicRoughnessMap{ KRTexture::TEXTURE_USAGE_MATERIAL_METALIC_ROUGHNESS };
   float m_metalicFactor{ 1.f };
   float m_roughnessFactor{ 1.f };
   alpha_mode_type m_alphaMode{ KRMATERIAL_ALPHA_MODE_OPAQUE };
@@ -152,17 +152,17 @@ public:
 
   float m_dispersion{ 0.f };
 
-  TextureMap m_specularTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_SPECULAR };
+  TextureMap m_specularMap{ KRTexture::TEXTURE_USAGE_MATERIAL_SPECULAR };
   float m_specularFactor{ 1.f };
   TextureMap m_specularColorTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_SPECULAR_COLOR };
   hydra::Vector3 m_specularColorFactor{ 1.f, 1.f, 1.f };
 
-  TextureMap m_thicknessTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_THICKNESS };
+  TextureMap m_thicknessMap{ KRTexture::TEXTURE_USAGE_MATERIAL_THICKNESS };
   float m_thicknessFactor{ 0.f };
   float m_attenuationDistance{ std::numeric_limits<float>::max() };
   hydra::Vector3 m_attenuationColor{ 1.f, 1.f, 1.f };
 
-  TextureMap m_transmissionTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_TRANSMISSION };
+  TextureMap m_transmissionMap{ KRTexture::TEXTURE_USAGE_MATERIAL_TRANSMISSION };
   float m_transmissionFactor = 0.f;
 
 private:
