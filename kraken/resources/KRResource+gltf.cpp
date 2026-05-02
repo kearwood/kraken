@@ -67,8 +67,46 @@ KRBundle* LoadGltf(KRContext& context, simdjson::ondemand::object& jsonRoot, std
     }
   }
   
-  simdjson::ondemand::array textures;
-  tryJson(jsonRoot["textures"].get_array().get(textures));
+  
+  struct TextureInfo
+  {
+    std::string name;
+    KRTexture* texture = nullptr;
+    int imageIndex = -1;
+    hydra::Vector2 scale{ 1.f, 1.f };
+    hydra::Vector2 offset{ 0.f, 0.f };
+    float rotation{ 0.f };
+  };
+  std::vector<TextureInfo> textures;
+  simdjson::ondemand::array jsonTextures;
+  if(tryJson(jsonRoot["textures"].get_array().get(jsonTextures)))
+  {
+    int textureIndex = 0;
+    for (auto jsonTexture : jsonTextures) {
+      TextureInfo& texture = textures.emplace_back();
+      std::string textureName;
+      std::string_view textureNameVal;
+      if (tryJson(jsonTexture["name"].get(textureNameVal))) {
+        texture.name = textureNameVal;
+      } else {
+        // Name not found in JSON. Generate a fall-back name.
+        texture.name = std::format("{}_texture_{}", baseName, textureIndex);
+      }
+      
+      // texture["sampler"] ...
+      tryJson(jsonTexture["source"].get(texture.imageIndex));
+      simdjson::ondemand::object extensions;
+      if(tryJson(jsonTexture["extensions"].get(extensions))) {
+        simdjson::ondemand::object textureTransform;
+        if(tryJson(extensions["KHR_texture_transform"].get(textureTransform))) {
+          tryJson(textureTransform["offset"].get(texture.offset));
+          tryJson(textureTransform["rotation"].get(texture.rotation));
+          tryJson(textureTransform["scale"].get(texture.scale));
+        }
+      }
+      textureIndex++;
+    }
+  }
   
   simdjson::ondemand::array images;
   tryJson(jsonRoot["images"].get_array().get(images));
@@ -111,29 +149,17 @@ KRBundle* LoadGltf(KRContext& context, simdjson::ondemand::object& jsonRoot, std
           tryJson(baseColorTextureInfo["texCoord"].get(new_material->m_baseColorMap.texCoord));
           int textureIndex = -1;
           if(tryJson(baseColorTextureInfo["index"].get(textureIndex))) {
-            simdjson::ondemand::object texture;
-            if(tryJson(textures.at(textureIndex).get(texture))) {
-              int imageIndex = -1;
-              // texture["name"] ...
-              // texture["sampler"] ...
-              if(tryJson(texture["source"].get(imageIndex))) {
-                simdjson::ondemand::object image;
-                if(tryJson(images.at(imageIndex).get(image))) {
-                  
-                }
-              }
-              simdjson::ondemand::object extensions;
-              if(tryJson(texture["extensions"].get(extensions))) {
-                simdjson::ondemand::object textureTransform;
-                if(tryJson(texture["KHR_texture_transform"].get(textureTransform))) {
-                  tryJson(textureTransform["offset"].get(new_material->m_baseColorMap.offset));
-                  tryJson(textureTransform["rotation"].get(new_material->m_baseColorMap.rotation));
-                  tryJson(textureTransform["scale"].get(new_material->m_baseColorMap.scale));
-                }
-              }
+            if (textureIndex < 0 || textureIndex >= textures.size()) {
+              // TODO: Log error...
+            } else {
+              const TextureInfo& texture = textures[textureIndex];
+              new_material->m_baseColorMap.scale = texture.scale;
+              new_material->m_baseColorMap.offset = texture.offset;
+              new_material->m_baseColorMap.rotation = texture.rotation;
+              // new_material->m_baseColorMap.texture = ...
             }
           }
-        }
+        } // baseColorTexture
         // baseColorTexture...
         tryJson(pbrMetallicRoughnessObj["metallicFactor"].get(new_material->m_metalicFactor));
         tryJson(pbrMetallicRoughnessObj["roughnessFactor"].get(new_material->m_roughnessFactor));
