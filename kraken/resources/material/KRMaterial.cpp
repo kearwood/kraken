@@ -101,12 +101,6 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
   simdjson::ondemand::parser parser;
   simdjson::ondemand::document doc;
   
-  auto tryJson = [](simdjson::error_code error) {
-    if (error != simdjson::EMPTY) {
-      // TODO - Report and handle error
-    }
-  };
-  
   /*
   char* str = (char*)data->getStart();
   OutputDebugStringA("\n\n----====----\n");

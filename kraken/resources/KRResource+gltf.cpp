@@ -43,25 +43,17 @@ using namespace hydra;
 #include "simdjson.h"
 using namespace simdjson;
 
-KRBundle* LoadGltf(KRContext& context, simdjson::dom::element& jsonRoot, std::vector<Block>& buffers, const std::string& baseName)
+KRBundle* LoadGltf(KRContext& context, simdjson::ondemand::object& jsonRoot, std::vector<Block>& buffers, const std::string& baseName)
 {
   std::string_view version;
-  simdjson::error_code error = jsonRoot["asset"]["version"].get(version);
-  if (error) {
-    // TODO - Report and handle error
+  if (!tryJsonRequired(jsonRoot["asset"]["version"].get(version))) {
     return nullptr;
   }
-
+  
   std::string_view minVersion;
-  error = jsonRoot["asset"]["minVersion"].get(minVersion);
-  if (error != simdjson::error_code::SUCCESS && error != simdjson::error_code::NO_SUCH_FIELD) {
-    // TODO - Report and handle error
-    return nullptr;
-  }
-
-  if (!error) {
+  if(tryJson(jsonRoot["asset"]["minVersion"].get(minVersion))) {
     // We have a minVersion field.
-    // We currently support only version 2.0 
+    // We currently support only version 2.0
     if (minVersion != "2.0") {
       // TODO - Report and handle error
       return nullptr;
@@ -74,25 +66,84 @@ KRBundle* LoadGltf(KRContext& context, simdjson::dom::element& jsonRoot, std::ve
       return nullptr;
     }
   }
-
-  simdjson::dom::array materials;
-  error = jsonRoot["materials"].get_array().get(materials);
-  if (error) {
-    // TODO - Report and handle error
-    return nullptr;
-  }
+  
+  simdjson::ondemand::array textures;
+  tryJson(jsonRoot["textures"].get_array().get(textures));
+  
+  simdjson::ondemand::array images;
+  tryJson(jsonRoot["images"].get_array().get(images));
+  
+  simdjson::ondemand::array samplers;
+  tryJson(jsonRoot["samplers"].get_array().get(samplers));
 
   KRBundle* bundle = new KRBundle(context, baseName);
 
-  for (auto jsonMaterial : materials) {
-    std::string_view materialName;
-    error = jsonMaterial["name"].get_string().get(materialName);
-    if (error) {
-      // TODO - Report and handle error
-      continue;
+  std::vector<KRMaterial*> materials;
+  simdjson::ondemand::array jsonMaterials;
+  if (tryJson(jsonRoot["materials"].get_array().get(jsonMaterials))) {
+    int materialIndex = 0;
+    for (auto jsonMaterial : jsonMaterials) {
+      std::string materialName;
+      std::string_view materialNameVal;
+      if (tryJson(jsonMaterial["name"].get(materialNameVal))) {
+        materialName = materialNameVal;
+      } else {
+        // Name not found in JSON. Generate a fall-back name.
+        materialName = std::format("{}_material_{}", baseName, materialIndex);
+      }
+      
+      KRMaterial* new_material = new KRMaterial(context, std::string(materialName).c_str());
+      simdjson::ondemand::object pbrMetallicRoughnessObj;
+      if(tryJson(jsonMaterial["pbrMetallicRoughness"].get(pbrMetallicRoughnessObj))) {
+        /*
+         
+         KRTextureBinding texture;
+         int texCoord{ 0 };
+         hydra::Vector2 scale{ 1.f, 1.f };
+         hydra::Vector2 offset{ 0.f, 0.f };
+         float rotation{ 0.f };
+         
+         */
+        
+        tryJson(pbrMetallicRoughnessObj["baseColorFactor"].get(new_material->m_baseColorFactor));
+        simdjson::ondemand::object baseColorTextureInfo;
+        if(tryJson(pbrMetallicRoughnessObj["baseColorTexture"].get(baseColorTextureInfo))) {
+          tryJson(baseColorTextureInfo["texCoord"].get(new_material->m_baseColorMap.texCoord));
+          int textureIndex = -1;
+          if(tryJson(baseColorTextureInfo["index"].get(textureIndex))) {
+            simdjson::ondemand::object texture;
+            if(tryJson(textures.at(textureIndex).get(texture))) {
+              int imageIndex = -1;
+              // texture["name"] ...
+              // texture["sampler"] ...
+              if(tryJson(texture["source"].get(imageIndex))) {
+                simdjson::ondemand::object image;
+                if(tryJson(images.at(imageIndex).get(image))) {
+                  
+                }
+              }
+              simdjson::ondemand::object extensions;
+              if(tryJson(texture["extensions"].get(extensions))) {
+                simdjson::ondemand::object textureTransform;
+                if(tryJson(texture["KHR_texture_transform"].get(textureTransform))) {
+                  tryJson(textureTransform["offset"].get(new_material->m_baseColorMap.offset));
+                  tryJson(textureTransform["rotation"].get(new_material->m_baseColorMap.rotation));
+                  tryJson(textureTransform["scale"].get(new_material->m_baseColorMap.scale));
+                }
+              }
+            }
+          }
+        }
+        // baseColorTexture...
+        tryJson(pbrMetallicRoughnessObj["metallicFactor"].get(new_material->m_metalicFactor));
+        tryJson(pbrMetallicRoughnessObj["roughnessFactor"].get(new_material->m_roughnessFactor));
+        // metallicRoughnessTexture...
+
+      }
+      new_material->moveToBundle(bundle);
+      materials.push_back(new_material);
+      materialIndex++;
     }
-    KRMaterial* new_material = new KRMaterial(context, std::string(materialName).c_str());
-    new_material->moveToBundle(bundle);
   }
 
   KRScene* pScene = new KRScene(context, baseName + "_scene");
@@ -118,17 +169,27 @@ KRBundle* KRResource::LoadGltf(KRContext& context, const std::string& path)
     return nullptr;
   }
 
-  simdjson::dom::parser parser;
-  simdjson::dom::element jsonRoot;
+  simdjson::ondemand::parser parser;
+  simdjson::ondemand::document doc;
+  
+  jsonData.expand(SIMDJSON_PADDING);
   jsonData.lock();
-  auto error = parser.parse((const char*)jsonData.getStart(), jsonData.getSize()).get(jsonRoot);
+  auto error = parser.iterate((const char*)jsonData.getStart(), jsonData.getSize()).get(doc);
   jsonData.unlock();
+
   if (error) {
     // TODO - Report and handle error
-    return nullptr;
+    return;
+  }
+  
+  ondemand::object jsonRoot;
+  error = doc.get_object().get(jsonRoot);
+  if (error) {
+    // TODO - Report and handle error
+    return;
   }
 
-  simdjson::dom::array jsonBuffers;
+  simdjson::ondemand::array jsonBuffers;
   error = jsonRoot["buffers"].get_array().get(jsonBuffers);
   if (error) {
     // TODO - Report and handle error

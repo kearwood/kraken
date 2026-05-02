@@ -32,6 +32,7 @@
 #include "KREngine-common.h"
 
 #include "KRHelpers.h"
+#include "KRContext.h"
 
 using namespace hydra;
 
@@ -89,5 +90,23 @@ const AABB getXMLAttribute(const std::string& base_name, tinyxml2::XMLElement* e
     return default_value;
   }
 }
+
+bool tryJsonRequired(simdjson::error_code error)
+{
+  if (error == simdjson::SUCCESS) {
+    return true;
+  }
+  KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - JSON error: %s", simdjson::simdjson_error(error).what());
+  return false;
+};
+
+bool tryJson(simdjson::error_code error)
+{
+  if (error != simdjson::SUCCESS && error != simdjson::EMPTY && error != simdjson::NO_SUCH_FIELD) {
+    KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - JSON error: %s", simdjson::simdjson_error(error).what());
+    return false;
+  }
+  return error == simdjson::SUCCESS;
+};
 
 } // namespace kraken
