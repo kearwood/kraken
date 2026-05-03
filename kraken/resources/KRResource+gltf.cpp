@@ -68,6 +68,52 @@ KRBundle* LoadGltf(KRContext& context, simdjson::ondemand::object& jsonRoot, std
   }
   
   
+  std::vector<KRTexture*> images;
+  simdjson::ondemand::array jsonImages;
+  if(tryJson(jsonRoot["images"].get_array().get(jsonImages))) {
+    for (auto jsonImage : jsonImages) {
+      KRTexture*& image = images.emplace_back();
+      image = nullptr;
+      std::string_view uri;
+      int bufferView = -1;
+      if (tryJson(jsonImage["uri"].get(uri))) {
+        if (uri.starts_with("data:")) {
+          KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - GLTF: Data URI's not supported for images.");
+          continue;
+        }
+        std::string uriStr;
+        uriStr = uri;
+        image = context.getTextureManager()->getTexture(util::GetFileBase(uriStr));
+        if (image == nullptr) {
+          KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - GLTF: Image with URI not found: %s", uriStr.c_str());
+          continue;
+        }
+      } else if (tryJson(jsonImage["bufferView"].get(bufferView))) {
+        std::string_view mimeType;
+        if(!tryJsonRequired(jsonImage["mimeType"].get(mimeType))) {
+          continue;
+        }
+        if (mimeType == "image/png") {
+          // TODO - Implement png loading from buffer view
+          KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - GLTF: Loading PNG Images from a buffer view is not yet supported.");
+          continue;
+        } else if (mimeType == "image/jpeg") {
+          // TODO - Implement jpeg loading from buffer view
+          KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - GLTF: Loading JPEG Images from a buffer view is not yet supported.");
+          continue;
+        } else {
+          std::string mimeTypeStr;
+          mimeTypeStr = mimeType;
+          KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - GLTF: Image with mime type not supported: %s", mimeTypeStr.c_str());
+          continue;
+        }
+      } else {
+        KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - GLTF: Image without uri or bufferView could not be imported.");
+        continue;
+      }
+    }
+  }
+  
   struct TextureInfo
   {
     std::string name;
@@ -93,8 +139,21 @@ KRBundle* LoadGltf(KRContext& context, simdjson::ondemand::object& jsonRoot, std
         texture.name = std::format("{}_texture_{}", baseName, textureIndex);
       }
       
-      // texture["sampler"] ...
-      tryJson(jsonTexture["source"].get(texture.imageIndex));
+      int samplerIndex = -1;
+      if (tryJson(jsonTexture["sampler"].get(samplerIndex))) {
+        KRContext::Log(KRContext::LOG_LEVEL_WARNING, "Kraken - GLTF: Sampler options not supported for texture: %s", texture.name.c_str());
+        // TODO - Implement texture sampler options
+      }
+      int imageIndex = -1;
+      if (!tryJson(jsonTexture["source"].get(imageIndex))) {
+        KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - GLTF: Could not load texture without a source attribute: %s", texture.name.c_str());
+        continue;
+      }
+      if (imageIndex < 0 || imageIndex >= images.size()) {
+        KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - GLTF: Could not load texture with a source index that is out of range: %s", texture.name.c_str());
+        continue;
+      }
+      texture.texture = images[imageIndex];
       simdjson::ondemand::object extensions;
       if(tryJson(jsonTexture["extensions"].get(extensions))) {
         simdjson::ondemand::object textureTransform;
@@ -107,9 +166,6 @@ KRBundle* LoadGltf(KRContext& context, simdjson::ondemand::object& jsonRoot, std
       textureIndex++;
     }
   }
-  
-  simdjson::ondemand::array images;
-  tryJson(jsonRoot["images"].get_array().get(images));
   
   simdjson::ondemand::array samplers;
   tryJson(jsonRoot["samplers"].get_array().get(samplers));
@@ -133,16 +189,6 @@ KRBundle* LoadGltf(KRContext& context, simdjson::ondemand::object& jsonRoot, std
       KRMaterial* new_material = new KRMaterial(context, std::string(materialName).c_str());
       simdjson::ondemand::object pbrMetallicRoughnessObj;
       if(tryJson(jsonMaterial["pbrMetallicRoughness"].get(pbrMetallicRoughnessObj))) {
-        /*
-         
-         KRTextureBinding texture;
-         int texCoord{ 0 };
-         hydra::Vector2 scale{ 1.f, 1.f };
-         hydra::Vector2 offset{ 0.f, 0.f };
-         float rotation{ 0.f };
-         
-         */
-        
         tryJson(pbrMetallicRoughnessObj["baseColorFactor"].get(new_material->m_baseColorFactor));
         simdjson::ondemand::object baseColorTextureInfo;
         if(tryJson(pbrMetallicRoughnessObj["baseColorTexture"].get(baseColorTextureInfo))) {
@@ -156,7 +202,7 @@ KRBundle* LoadGltf(KRContext& context, simdjson::ondemand::object& jsonRoot, std
               new_material->m_baseColorMap.scale = texture.scale;
               new_material->m_baseColorMap.offset = texture.offset;
               new_material->m_baseColorMap.rotation = texture.rotation;
-              // new_material->m_baseColorMap.texture = ...
+              new_material->m_baseColorMap.texture.set(texture.texture);
             }
           }
         } // baseColorTexture
