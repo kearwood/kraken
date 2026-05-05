@@ -308,6 +308,13 @@ KRBundle* LoadGltf(KRContext& context, simdjson::ondemand::object& jsonRoot, std
           tryJson(extensions_KHR_materials_transmission["transmissionFactor"].get(new_material->m_transmissionFactor));
           parseTextureInfo(extensions_KHR_materials_transmission, "transmissionTexture", new_material->m_transmissionMap);
         }
+        
+        simdjson::ondemand::object extensions_KHR_materials_emissive_strength;
+        if(tryJson(extensions["KHR_materials_emissive_strength"].get(extensions_KHR_materials_emissive_strength))) {
+          float strength = 1.f;
+          tryJson(extensions_KHR_materials_emissive_strength["emissiveStrength"].get(strength));
+          new_material->m_emissiveFactor *= strength;
+        }
       }
       materialIndex++;
     }
