@@ -176,7 +176,13 @@ KRBundle* LoadGltf(KRContext& context, simdjson::ondemand::object& jsonRoot, std
   simdjson::ondemand::array jsonMaterials;
   if (tryJson(jsonRoot["materials"].get_array().get(jsonMaterials))) {
     int materialIndex = 0;
-    for (auto jsonMaterial : jsonMaterials) {
+    for (auto jsonMaybeMaterial : jsonMaterials) {
+      KRMaterial*& new_material = materials.emplace_back();
+      new_material = nullptr;
+      simdjson::ondemand::object jsonMaterial;
+      if(!tryJsonRequired(jsonMaybeMaterial.get(jsonMaterial))) {
+        continue;
+      }
       std::string materialName;
       std::string_view materialNameVal;
       if (tryJson(jsonMaterial["name"].get(materialNameVal))) {
@@ -186,34 +192,123 @@ KRBundle* LoadGltf(KRContext& context, simdjson::ondemand::object& jsonRoot, std
         materialName = std::format("{}_material_{}", baseName, materialIndex);
       }
       
-      KRMaterial* new_material = new KRMaterial(context, std::string(materialName).c_str());
+      auto parseTextureInfoAttributes = [&materialName, &textures](simdjson::ondemand::object jsonTextureInfo, KRMaterial::TextureMap& textureMap)
+      {
+        tryJson(jsonTextureInfo["texCoord"].get(textureMap.texCoord));
+        int textureIndex = -1;
+        if(tryJson(jsonTextureInfo["index"].get(textureIndex))) {
+          if (textureIndex < 0 || textureIndex >= textures.size()) {
+            KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - GLTF: Material textureInfo with index out of bounds: %s", materialName.c_str());
+          } else {
+            const TextureInfo& texture = textures[textureIndex];
+            textureMap.scale = texture.scale;
+            textureMap.offset = texture.offset;
+            textureMap.rotation = texture.rotation;
+            textureMap.texture.set(texture.texture);
+          }
+        }
+      };
+      
+      auto parseTextureInfo = [parseTextureInfoAttributes, &materialName, &textures](simdjson::ondemand::object jsonObj, const char* nodeName, KRMaterial::TextureMap& textureMap)
+      {
+        simdjson::ondemand::object jsonTextureInfo;
+        if(tryJson(jsonObj[nodeName].get(jsonTextureInfo))) {
+          parseTextureInfoAttributes(jsonTextureInfo, textureMap);
+        }
+      };
+      
+      auto parseNormalTextureInfo = [parseTextureInfoAttributes, &materialName, &textures](simdjson::ondemand::object jsonObj, const char* nodeName, KRMaterial::TextureMap& textureMap, float* normalScale)
+      {
+        simdjson::ondemand::object jsonTextureInfo;
+        if(tryJson(jsonObj[nodeName].get(jsonTextureInfo))) {
+          parseTextureInfoAttributes(jsonTextureInfo, textureMap);
+          tryJson(jsonTextureInfo["scale"].get(*normalScale));
+        }
+      };
+      
+      new_material = new KRMaterial(context, std::string(materialName).c_str());
       simdjson::ondemand::object pbrMetallicRoughnessObj;
       if(tryJson(jsonMaterial["pbrMetallicRoughness"].get(pbrMetallicRoughnessObj))) {
         tryJson(pbrMetallicRoughnessObj["baseColorFactor"].get(new_material->m_baseColorFactor));
-        simdjson::ondemand::object baseColorTextureInfo;
-        if(tryJson(pbrMetallicRoughnessObj["baseColorTexture"].get(baseColorTextureInfo))) {
-          tryJson(baseColorTextureInfo["texCoord"].get(new_material->m_baseColorMap.texCoord));
-          int textureIndex = -1;
-          if(tryJson(baseColorTextureInfo["index"].get(textureIndex))) {
-            if (textureIndex < 0 || textureIndex >= textures.size()) {
-              // TODO: Log error...
-            } else {
-              const TextureInfo& texture = textures[textureIndex];
-              new_material->m_baseColorMap.scale = texture.scale;
-              new_material->m_baseColorMap.offset = texture.offset;
-              new_material->m_baseColorMap.rotation = texture.rotation;
-              new_material->m_baseColorMap.texture.set(texture.texture);
-            }
-          }
-        } // baseColorTexture
-        // baseColorTexture...
+        parseTextureInfo(pbrMetallicRoughnessObj, "baseColorTexture", new_material->m_baseColorMap);
         tryJson(pbrMetallicRoughnessObj["metallicFactor"].get(new_material->m_metalicFactor));
         tryJson(pbrMetallicRoughnessObj["roughnessFactor"].get(new_material->m_roughnessFactor));
-        // metallicRoughnessTexture...
-
+        parseTextureInfo(pbrMetallicRoughnessObj, "metallicRoughnessTexture", new_material->m_metalicRoughnessMap);
       }
+      parseNormalTextureInfo(jsonMaterial, "normalTexture", new_material->m_normalMap, &new_material->m_normalScale);
+      simdjson::ondemand::object occlusionTextureInfo;
+      if(tryJson(jsonMaterial["occlusionTexture"].get(occlusionTextureInfo))) {
+        parseTextureInfoAttributes(occlusionTextureInfo, new_material->m_occlusionMap);
+        tryJson(occlusionTextureInfo["strength"].get(new_material->m_occlusionStrength));
+      }
+      parseTextureInfo(jsonMaterial, "emissiveTexture", new_material->m_emissiveMap);
+      tryJson(jsonMaterial["emissiveFactor"].get(new_material->m_emissiveFactor));
       new_material->moveToBundle(bundle);
-      materials.push_back(new_material);
+      
+      std::string_view alphaMode;
+      if(tryJson(jsonMaterial["alphaMode"].get(alphaMode))) {
+        if (alphaMode.compare("OPAQUE") == 0) {
+          new_material->m_alphaMode = KRMaterial::KRMATERIAL_ALPHA_MODE_OPAQUE;
+        } else if (alphaMode.compare("BLEND") == 0) {
+          new_material->m_alphaMode = KRMaterial::KRMATERIAL_ALPHA_MODE_BLEND;
+        } else if (alphaMode.compare("MASK") == 0) {
+          new_material->m_alphaMode = KRMaterial::KRMATERIAL_ALPHA_MODE_TEST;
+        } else {
+          KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - GLTF: Material with unknown alphaMode: %s", materialName.c_str());
+        }
+      }
+      tryJson(jsonMaterial["alphaCutoff"].get(new_material->m_alphaCutoff));
+      tryJson(jsonMaterial["doubleSided"].get(new_material->m_doubleSided));
+      
+      simdjson::ondemand::object extensions;
+      if(tryJson(jsonMaterial["extensions"].get(extensions))) {
+        tryJson(extensions["KHR_materials_ior"]["ior"].get(new_material->m_ior));
+        tryJson(extensions["KHR_materials_dispersion"]["dispersino"].get(new_material->m_dispersion));
+        simdjson::ondemand::object extensions_KHR_materials_unlit;
+        if(tryJson(extensions["KHR_materials_unlit"].get(extensions_KHR_materials_unlit))) {
+          // The presence of the KHR_materials_unlit node is all that is needed to enable the unlit shading model
+          new_material->m_shadingModel = KRMaterial::KRMATERIAL_SHADING_MODEL_UNLIT;
+        } else {
+          new_material->m_shadingModel = KRMaterial::KRMATERIAL_SHADING_MODEL_PBR;
+        }
+        simdjson::ondemand::object extensions_KHR_materials_anisotropy;
+        if(tryJson(extensions["KHR_materials_anisotropy"].get(extensions_KHR_materials_anisotropy))) {
+          parseTextureInfo(extensions_KHR_materials_anisotropy, "anisotropyTexture", new_material->m_anisotropyMap);
+          tryJson(extensions_KHR_materials_anisotropy["anisotropyStrength"].get(new_material->m_anisotropyStrength));
+          tryJson(extensions_KHR_materials_anisotropy["anisotropyRotation"].get(new_material->m_anisotropyRotation));
+        }
+        
+        simdjson::ondemand::object extensions_KHR_materials_clearcoat;
+        if(tryJson(extensions["KHR_materials_clearcoat"].get(extensions_KHR_materials_clearcoat))) {
+          tryJson(extensions_KHR_materials_clearcoat["clearcoatFactor"].get(new_material->m_clearcoatFactor));
+          parseTextureInfo(extensions_KHR_materials_clearcoat, "clearcoatTexture", new_material->m_clearcoatMap);
+          tryJson(extensions_KHR_materials_clearcoat["clearcoatRoughnessFactor"].get(new_material->m_clearcoatRoughnessFactor));
+          parseTextureInfo(extensions_KHR_materials_clearcoat, "clearcoatRoughnessTexture", new_material->m_clearcoatRoughnessMap);
+          parseNormalTextureInfo(extensions_KHR_materials_clearcoat, "clearcoatNormalTexture", new_material->m_clearcoatNormalMap, &new_material->m_clearcoatNormalScale);
+        }
+        
+        simdjson::ondemand::object extensions_KHR_materials_specular;
+        if(tryJson(extensions["KHR_materials_specular"].get(extensions_KHR_materials_specular))) {
+          tryJson(extensions_KHR_materials_specular["specularFactor"].get(new_material->m_specularFactor));
+          parseTextureInfo(extensions_KHR_materials_specular, "specularTexture", new_material->m_specularMap);
+          tryJson(extensions_KHR_materials_specular["specularColorFactor"].get(new_material->m_specularColorFactor));
+          parseTextureInfo(extensions_KHR_materials_specular, "specularColorTexture", new_material->m_specularColorTexture);
+        }
+        
+        simdjson::ondemand::object extensions_KHR_materials_volume;
+        if(tryJson(extensions["KHR_materials_volume"].get(extensions_KHR_materials_volume))) {
+          tryJson(extensions_KHR_materials_volume["thicknessFactor"].get(new_material->m_thicknessFactor));
+          parseTextureInfo(extensions_KHR_materials_volume, "thicknessTexture", new_material->m_thicknessMap);
+          tryJson(extensions_KHR_materials_volume["attenuationDistance"].get(new_material->m_attenuationDistance));
+          tryJson(extensions_KHR_materials_volume["attenuationColor"].get(new_material->m_attenuationColor));
+        }
+        
+        simdjson::ondemand::object extensions_KHR_materials_transmission;
+        if(tryJson(extensions["KHR_materials_transmission"].get(extensions_KHR_materials_transmission))) {
+          tryJson(extensions_KHR_materials_transmission["transmissionFactor"].get(new_material->m_transmissionFactor));
+          parseTextureInfo(extensions_KHR_materials_transmission, "transmissionTexture", new_material->m_transmissionMap);
+        }
+      }
       materialIndex++;
     }
   }

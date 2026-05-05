@@ -285,6 +285,13 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
         // TODO - Report and handle error
       }
       tryJson(clearcoatObj["roughnessFactor"].get(m_clearcoatRoughnessFactor));
+      error = clearcoatObj["normalMap"].get(mapVal);
+      if (error == simdjson::SUCCESS) {
+        tryJson(m_clearcoatNormalMap.parse(mapVal));
+      } else if (error != simdjson::EMPTY) {
+        // TODO - Report and handle error
+      }
+      tryJson(clearcoatObj["clearcoatNormalScale"].get(m_clearcoatNormalScale));
     } else if (error != simdjson::EMPTY) {
       // TODO - Report and handle error
     }
@@ -484,6 +491,10 @@ bool KRMaterial::save(Block& data)
   sb.append_key_value<"roughnessMap">(m_clearcoatRoughnessMap);
   sb.append_comma();
   sb.append_key_value<"roughnessFactor">(m_clearcoatRoughnessFactor);
+  sb.append_comma();
+  sb.append_key_value<"normalMap">(m_clearcoatNormalMap);
+  sb.append_comma();
+  sb.append_key_value<"normalScale">(m_clearcoatNormalScale);
   sb.end_object();
 
   sb.append_comma();
@@ -676,10 +687,6 @@ kraken_stream_level KRMaterial::getStreamLevel()
 
   if (m_anisotropyMap.texture.isBound()) {
     stream_level = KRMIN(stream_level, m_anisotropyMap.texture.get()->getStreamLevel());
-  }
-
-  if (m_clearcoatMap.texture.isBound()) {
-    stream_level = KRMIN(stream_level, m_clearcoatMap.texture.get()->getStreamLevel());
   }
 
   if (m_clearcoatMap.texture.isBound()) {

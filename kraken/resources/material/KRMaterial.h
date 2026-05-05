@@ -149,6 +149,7 @@ public:
   TextureMap m_clearcoatRoughnessMap{ KRTexture::TEXTURE_USAGE_MATERIAL_CLEARCOAT_ROUGHNESS };
   float m_clearcoatRoughnessFactor{ 0.f };
   TextureMap m_clearcoatNormalMap{ KRTexture::TEXTURE_USAGE_MATERIAL_CLEARCOAT_NORMAL };
+  float m_clearcoatNormalScale{ 1.f };
 
   float m_dispersion{ 0.f };
 
