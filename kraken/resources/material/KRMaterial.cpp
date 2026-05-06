@@ -121,15 +121,13 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
   }
   
   ondemand::object jsonRoot;
-  error = doc.get_object().get(jsonRoot);
-  if (error) {
+  if(!tryJsonRequired(doc.get_object().get(jsonRoot))) {
     // TODO - Report and handle error
     return;
   }
 
   std::string_view alphaModeText;
-  error = jsonRoot["alphaMode"].get_string().get(alphaModeText);
-  if (error == simdjson::SUCCESS) {
+  if (tryJson(jsonRoot["alphaMode"].get_string().get(alphaModeText))) {
     if (alphaModeText.compare("opaque") == 0) {
       m_alphaMode = KRMATERIAL_ALPHA_MODE_OPAQUE;
     } else if (alphaModeText.compare("blend") == 0) {
@@ -137,10 +135,8 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
     } else if (alphaModeText.compare("test") == 0) {
       m_alphaMode = KRMATERIAL_ALPHA_MODE_TEST;
     } else {
-      // TODO - Report and handle error
+      KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - Unknown material alphaMode: %s for %s.", alphaModeText, name.c_str());
     }
-  } else if (error != simdjson::EMPTY) {
-    // TODO - Report and handle error
   }
   
   tryJson(jsonRoot["alphaCutoff"].get(m_alphaCutoff));
@@ -149,211 +145,140 @@ KRMaterial::KRMaterial(KRContext& context, std::string name, mimir::Block* data)
 
   m_shadingModel = KRMATERIAL_SHADING_MODEL_PBR;
   std::string_view shadingModelText;
-  error = jsonRoot["shadingModel"].get_string().get(shadingModelText);
-  if (error == simdjson::SUCCESS) {
+  if (tryJson(jsonRoot["shadingModel"].get_string().get(shadingModelText))) {
     if (shadingModelText.compare("unlit") == 0) {
       m_shadingModel = KRMATERIAL_SHADING_MODEL_UNLIT;
     } else if (shadingModelText.compare("pbr") == 0) {
       m_shadingModel = KRMATERIAL_SHADING_MODEL_PBR;
     } else {
-      // TODO - Report and handle error
+      KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Kraken - Unknown material shadingModel: %s for %s.", shadingModelText, name.c_str());
     }
-  } else if (error != simdjson::EMPTY) {
-    // TODO - Report and handle error
   }
   
   {
     simdjson::ondemand::object baseColorObj;
-    error = jsonRoot["baseColor"].get_object().get(baseColorObj);
-    if (error == simdjson::SUCCESS) {
+    if (tryJson(jsonRoot["baseColor"].get_object().get(baseColorObj))) {
       simdjson::ondemand::value mapVal;
-      error = baseColorObj["map"].get(mapVal);
-      if (error == simdjson::SUCCESS) {
+      if (tryJson(baseColorObj["map"].get(mapVal))) {
         tryJson(m_baseColorMap.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(baseColorObj["factor"].get(m_baseColorFactor));
-    } else if (error != simdjson::EMPTY) {
-      // TODO - Report and handle error
     }
   }
   
   {
     simdjson::ondemand::object normalObj;
-    error = jsonRoot["normal"].get_object().get(normalObj);
-    if (error == simdjson::SUCCESS) {
+    if (tryJson(jsonRoot["normal"].get_object().get(normalObj))) {
       simdjson::ondemand::value mapVal;
-      error = normalObj["map"].get(mapVal);
-      if (error == simdjson::SUCCESS) {
+      if (tryJson(normalObj["map"].get(mapVal))) {
         tryJson(m_normalMap.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(normalObj["scale"].get(m_normalScale));
-    } else if (error != simdjson::EMPTY) {
-      // TODO - Report and handle error
     }
   }
   
   {
     simdjson::ondemand::object emissiveObj;
-    error = jsonRoot["emissive"].get_object().get(emissiveObj);
-    if (error == simdjson::SUCCESS) {
+    if (tryJson(jsonRoot["emissive"].get_object().get(emissiveObj))) {
       simdjson::ondemand::value mapVal;
-      error = emissiveObj["map"].get(mapVal);
-      if (error == simdjson::SUCCESS) {
+      if (tryJson(emissiveObj["map"].get(mapVal))) {
         tryJson(m_emissiveMap.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(emissiveObj["factor"].get(m_emissiveFactor));
-    } else if (error != simdjson::EMPTY) {
-      // TODO - Report and handle error
     }
   }
   
   {
     simdjson::ondemand::object occlusionObj;
-    error = jsonRoot["occlusion"].get_object().get(occlusionObj);
-    if (error == simdjson::SUCCESS) {
+    if (tryJson(jsonRoot["occlusion"].get_object().get(occlusionObj))) {
       simdjson::ondemand::value mapVal;
-      error = occlusionObj["map"].get(mapVal);
-      if (error == simdjson::SUCCESS) {
+      if (tryJson(occlusionObj["map"].get(mapVal))) {
         tryJson(m_occlusionMap.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(occlusionObj["strength"].get(m_occlusionStrength));
-    } else if (error != simdjson::EMPTY) {
-      // TODO - Report and handle error
     }
   }
   
   {
     simdjson::ondemand::object metalicRoughnessObj;
-    error = jsonRoot["metalicRoughness"].get_object().get(metalicRoughnessObj);
-    if (error == simdjson::SUCCESS) {
+    if (tryJson(jsonRoot["metalicRoughness"].get_object().get(metalicRoughnessObj))) {
       simdjson::ondemand::value mapVal;
-      error = metalicRoughnessObj["map"].get(mapVal);
-      if (error == simdjson::SUCCESS) {
+      if (tryJson(metalicRoughnessObj["map"].get(mapVal))) {
         tryJson(m_metalicRoughnessMap.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(metalicRoughnessObj["metalicFactor"].get(m_metalicFactor));
       tryJson(metalicRoughnessObj["roughnessFactor"].get(m_roughnessFactor));
-    } else if (error != simdjson::EMPTY) {
-      // TODO - Report and handle error
     }
   }
 
   {
     simdjson::ondemand::object anisotropyObj;
-    error = jsonRoot["anisotropy"].get_object().get(anisotropyObj);
-    if (error == simdjson::SUCCESS) {
+    if (tryJson(jsonRoot["anisotropy"].get_object().get(anisotropyObj))) {
       simdjson::ondemand::value mapVal;
-      error = anisotropyObj["map"].get(mapVal);
-      if (error == simdjson::SUCCESS) {
+      if (tryJson(anisotropyObj["map"].get(mapVal))) {
         tryJson(m_anisotropyMap.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(anisotropyObj["strength"].get(m_anisotropyStrength));
       tryJson(anisotropyObj["rotation"].get(m_anisotropyRotation));
-    } else if (error != simdjson::EMPTY) {
-      // TODO - Report and handle error
     }
   }
   
   {
     simdjson::ondemand::object clearcoatObj;
-    error = jsonRoot["clearcoat"].get_object().get(clearcoatObj);
-    if (error == simdjson::SUCCESS) {
+    if (tryJson(jsonRoot["clearcoat"].get_object().get(clearcoatObj))) {
       simdjson::ondemand::value mapVal;
       error = clearcoatObj["map"].get(mapVal);
       if (error == simdjson::SUCCESS) {
         tryJson(m_clearcoatMap.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(clearcoatObj["factor"].get(m_clearcoatFactor));
-      error = clearcoatObj["roughnessMap"].get(mapVal);
-      if (error == simdjson::SUCCESS) {
+      if (tryJson(clearcoatObj["roughnessMap"].get(mapVal))) {
         tryJson(m_clearcoatRoughnessMap.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(clearcoatObj["roughnessFactor"].get(m_clearcoatRoughnessFactor));
-      error = clearcoatObj["normalMap"].get(mapVal);
-      if (error == simdjson::SUCCESS) {
+      if (tryJson(clearcoatObj["normalMap"].get(mapVal))) {
         tryJson(m_clearcoatNormalMap.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(clearcoatObj["clearcoatNormalScale"].get(m_clearcoatNormalScale));
-    } else if (error != simdjson::EMPTY) {
-      // TODO - Report and handle error
     }
   }
   
   {
     simdjson::ondemand::object specularObj;
-    error = jsonRoot["specular"].get_object().get(specularObj);
-    if (error == simdjson::SUCCESS) {
+    if (tryJson(jsonRoot["specular"].get_object().get(specularObj))) {
       simdjson::ondemand::value mapVal;
-      error = specularObj["map"].get(mapVal);
-      if (error == simdjson::SUCCESS) {
+      if (tryJson(specularObj["map"].get(mapVal))) {
         tryJson(m_specularMap.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(specularObj["factor"].get(m_specularFactor));
-      error = specularObj["colorMap"].get(mapVal);
-      if (error == simdjson::SUCCESS) {
+      if (tryJson(specularObj["colorMap"].get(mapVal))) {
         tryJson(m_specularColorTexture.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(specularObj["colorFactor"].get(m_specularColorFactor));
-    } else if (error != simdjson::EMPTY) {
-      // TODO - Report and handle error
     }
   }
   
   {
     simdjson::ondemand::object thicknessObj;
-    error = jsonRoot["thickness"].get_object().get(thicknessObj);
-    if (error == simdjson::SUCCESS) {
+    if (tryJson(jsonRoot["thickness"].get_object().get(thicknessObj))) {
       simdjson::ondemand::value mapVal;
-      error = thicknessObj["map"].get(mapVal);
-      if (error == simdjson::SUCCESS) {
+      if (tryJson(thicknessObj["map"].get(mapVal))) {
         tryJson(m_thicknessMap.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(thicknessObj["factor"].get(m_thicknessFactor));
       tryJson(thicknessObj["attenuiationDistance"].get(m_attenuationDistance));
       tryJson(thicknessObj["attenuationColor"].get(m_attenuationColor));
-    } else if (error != simdjson::EMPTY) {
-      // TODO - Report and handle error
     }
   }
   
   {
     simdjson::ondemand::object transmissionObj;
-    error = jsonRoot["transmission"].get_object().get(transmissionObj);
-    if (error == simdjson::SUCCESS) {
+    if (tryJson(jsonRoot["transmission"].get_object().get(transmissionObj))) {
       simdjson::ondemand::value mapVal;
-      error = transmissionObj["map"].get(mapVal);
-      if (error == simdjson::SUCCESS) {
+      if (tryJson(transmissionObj["map"].get(mapVal))) {
         tryJson(m_transmissionMap.parse(mapVal));
-      } else if (error != simdjson::EMPTY) {
-        // TODO - Report and handle error
       }
       tryJson(transmissionObj["factor"].get(m_transmissionFactor));
-    } else if (error != simdjson::EMPTY) {
-      // TODO - Report and handle error
     }
   }
   

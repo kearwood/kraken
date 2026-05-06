@@ -93,18 +93,6 @@ public:
   virtual std::string getExtension() override;
   virtual bool save(mimir::Block& data) override;
 
-  /*
-  void setAmbientMap(std::string texture_name, hydra::Vector2 texture_scale, hydra::Vector2 texture_offset);
-  void setDiffuseMap(std::string texture_name, hydra::Vector2 texture_scale, hydra::Vector2 texture_offset);
-  void setSpecularMap(std::string texture_name, hydra::Vector2 texture_scale, hydra::Vector2 texture_offset);
-  void setReflectionMap(std::string texture_name, hydra::Vector2 texture_scale, hydra::Vector2 texture_offset);
-  void setReflectionCube(std::string texture_name);
-  void setNormalMap(std::string texture_name, hydra::Vector2 texture_scale, hydra::Vector2 texture_offset);
-  void setAmbient(const hydra::Vector3& c);
-  void setDiffuse(const hydra::Vector3& c);
-  void setSpecular(const hydra::Vector3& c);
-  void setReflection(const hydra::Vector3& c);
-  */
   void setTransparency(float a);
   void setShininess(float s);
   void setAlphaMode(alpha_mode_type blend_mode);
