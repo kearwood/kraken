@@ -149,9 +149,6 @@ void KRSprite::render(RenderInfo& ri)
 bool KRSprite::getShaderValue(ShaderValue value, float* output) const
 {
   switch (value) {
-  case ShaderValue::material_alpha:
-    *output = m_spriteAlpha;
-    return true;
   }
   return KRNode::getShaderValue(value, output);
 }

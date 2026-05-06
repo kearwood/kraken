@@ -81,7 +81,7 @@ layout( push_constant ) uniform constants
     #endif
   #endif
 #else
-  mediump float material_shininess;
+  mediump float material_roughness_factor;
 #endif
 #if GBUFFER_PASS == 1
     #if HAS_NORMAL_MAP == 1
@@ -169,7 +169,7 @@ layout( push_constant ) uniform constants
 
 
 #if ENABLE_PER_PIXEL == 1 || GBUFFER_PASS == 1
-    mediump float material_shininess;
+    mediump float material_roughness_factor;
     #if HAS_NORMAL_MAP == 1
         sampler2D normalTexture;
     #endif
@@ -193,10 +193,8 @@ layout( push_constant ) uniform constants
     #endif
 #else
     lowp vec3 material_ambient;
-    lowp vec3 material_diffuse;
-    lowp vec3 material_specular;
-    lowp float material_alpha;
-
+    lowp vec4 material_baseColor_factor;
+    lowp vec3 material_specularColor_factor;
 
     #if HAS_DIFFUSE_MAP == 1
         sampler2D     diffuseTexture;
@@ -493,7 +491,7 @@ void main()
             // ------ Calculate per-vertex lighting ------
             mediump vec3 halfVec = normalize((normalize(PushConstants.camera_position_model_space - vertex_position_skinned) + PushConstants.light_direction_model_space)); // Normalizing anyways, no need to divide by 2
             lamberFactor = max(0.0,dot(PushConstants.light_direction_model_space, vertex_normal_skinned));
-            specularFactor = max(0.0,pow(dot(halfVec,vertex_normal_skinned), PushConstants.material_shininess));
+            specularFactor = max(0.0,pow(dot(halfVec,vertex_normal_skinned), 1.0 - PushConstants.material_roughness_factor));
         #endif
     #endif
 }

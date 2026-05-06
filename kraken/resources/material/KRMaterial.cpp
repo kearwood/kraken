@@ -730,11 +730,8 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
 bool KRMaterial::getShaderValue(ShaderValue value, float* output) const
 {
   switch (value) {
-  case ShaderValue::material_alpha:
-    *output = m_baseColorFactor[3];
-    return true;
-  case ShaderValue::material_shininess:
-    *output = 1.0f - m_roughnessFactor;
+  case ShaderValue::material_roughness_factor:
+    *output = m_roughnessFactor;
     return true;
   }
   return false;
@@ -743,22 +740,22 @@ bool KRMaterial::getShaderValue(ShaderValue value, float* output) const
 bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector2* output) const
 {
   switch (value) {
-  case ShaderValue::material_diffusetexture_scale:
+  case ShaderValue::material_baseColor_map_scale:
     *output = m_baseColorMap.scale;
     return true;
-  case ShaderValue::material_speculartexture_scale:
+  case ShaderValue::material_specularColor_map_scale:
     *output = m_specularColorMap.scale;
     return true;
-  case ShaderValue::material_normaltexture_scale:
+  case ShaderValue::material_normal_map_scale:
     *output = m_normalMap.scale;
     return true;
-  case ShaderValue::material_diffusetexture_offset:
+  case ShaderValue::material_baseColor_map_offset:
     *output = m_baseColorMap.offset;
     return true;
-  case ShaderValue::material_speculartexture_offset:
+  case ShaderValue::material_specularColor_map_offset:
     *output = m_specularColorMap.offset;
     return true;
-  case ShaderValue::material_normaltexture_offset:
+  case ShaderValue::material_normal_map_offset:
     *output = m_normalMap.offset;
     return true;
   }
@@ -768,11 +765,18 @@ bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector2* output) const
 bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector3* output) const
 {
   switch (value) {
-  case ShaderValue::material_diffuse:
-    *output = hydra::Vector3::Create(m_baseColorFactor);
-    return true;
-  case ShaderValue::material_specular:
+  case ShaderValue::material_specularColor_factor:
     *output = m_specularColorFactor;
+    return true;
+  }
+  return false;
+}
+
+bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector4* output) const
+{
+  switch (value) {
+  case ShaderValue::material_baseColor_factor:
+    *output = m_baseColorFactor;
     return true;
   }
   return false;

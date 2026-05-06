@@ -712,7 +712,7 @@ void KRPipeline::updatePushConstants(KRNode::RenderInfo& ri, const Matrix4& matM
   setPushConstant(ShaderValue::speculartexture, 1);
 
   // Sets the normalTexture variable to the third texture unit
-  setPushConstant(ShaderValue::material_normaltexture, 2);
+  setPushConstant(ShaderValue::material_normal_map_texture, 2);
 
   // Sets the shadowTexture variable to the fourth texture unit
   setPushConstant(ShaderValue::shadowtexture1, 3);

@@ -234,7 +234,7 @@ layout( push_constant ) uniform constants
     #endif
   #endif
 #else
-  mediump float material_shininess;
+  mediump float material_roughness_factor;
 #endif
 #if GBUFFER_PASS == 1
     #if HAS_NORMAL_MAP == 1
@@ -322,7 +322,7 @@ layout( push_constant ) uniform constants
 
 
 #if ENABLE_PER_PIXEL == 1 || GBUFFER_PASS == 1
-    mediump float material_shininess;
+    mediump float material_roughness_factor;
     #if HAS_NORMAL_MAP == 1
         sampler2D normalTexture;
     #endif
@@ -346,9 +346,8 @@ layout( push_constant ) uniform constants
     #endif
 #else
     lowp vec3 material_ambient;
-    lowp vec3 material_diffuse;
-    lowp vec3 material_specular;
-    lowp float material_alpha;
+    lowp vec4 material_baseColor_factor;
+    lowp vec3 material_specularColor_factor;
 
 
     #if HAS_DIFFUSE_MAP == 1
@@ -432,7 +431,7 @@ void main()
         #else
             mediump vec3 view_space_normal = vec3(model_view_inverse_transpose_matrix * vec4(normal, 1.0));
         #endif
-        colorOut = vec4(view_space_normal * 0.5 + 0.5, PushConstants.material_shininess / 100.0);
+        colorOut = vec4(view_space_normal * 0.5 + 0.5, (1.0 - PushConstants.material_roughness_factor) / 100.0);
     #else
         #if HAS_DIFFUSE_MAP == 1
             #if ALPHA_TEST == 1
@@ -457,13 +456,13 @@ void main()
                 mediump float lamberFactor = max(0.0,dot(lightVec, normal));
             #endif
             mediump float specularFactor = 0.0;
-            if(PushConstants.material_shininess > 0.0) {
+            if(PushConstants.material_roughness_factor < 1.0) {
                 #if GBUFFER_PASS == 3
                     specularFactor = gbuffer_specular_factor;
                 #else
                     mediump float halfVecDot = dot(halfVec,normal);
                     if(halfVecDot > 0.0) {
-                        specularFactor = max(0.0,pow(halfVecDot, PushConstants.material_shininess));
+                        specularFactor = max(0.0,pow(halfVecDot, 1.0 - PushConstants.material_roughness_factor));
                     }
                 #endif
             }
@@ -546,23 +545,23 @@ void main()
             
         #if ENABLE_DIFFUSE == 1
             // -------------------- Add diffuse light --------------------
-            colorOut += diffuseMaterial * vec4(PushConstants.material_diffuse * lamberFactor, 1.0);
+            colorOut += diffuseMaterial * vec4(PushConstants.material_baseColor_factor.rgb * lamberFactor, 1.0);
         #endif
 
         // -------------------- Apply material_alpha --------------------
     
         #if ALPHA_BLEND == 1
             colorOut.a = diffuseMaterial.a;
-            colorOut *= material_alpha;
+            colorOut *= material_baseColor_factor.a;
         #endif
     
         // -------------------- Add specular light --------------------
         // Additive, not masked against diffuse alpha
         #if ENABLE_SPECULAR == 1
             #if HAS_SPEC_MAP == 1 && ENABLE_PER_PIXEL == 1
-                colorOut.rgb += material_specular * vec3(texture(specularTexture, spec_uv)) * specularFactor;
+                colorOut.rgb += material_specularColor_factor * vec3(texture(specularTexture, spec_uv)) * specularFactor;
             #else
-                colorOut.rgb += material_specular * specularFactor;
+                colorOut.rgb += material_specularColor_factor * specularFactor;
             #endif    
         #endif
 

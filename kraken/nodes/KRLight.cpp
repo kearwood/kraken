@@ -361,7 +361,6 @@ void KRLight::render(RenderInfo& ri)
 
 
             KRPipeline* pShader = getContext().getPipelineManager()->getPipeline(*ri.surface, info);
-            pShader->setPushConstant(ShaderValue::material_alpha, 1.0f);
             pShader->setImageBinding("diffuseTexture", m_flareTexture.val.get(), getContext().getSamplerManager()->DEFAULT_CLAMPED_SAMPLER);
             pShader->bind(ri, getModelMatrix());
 

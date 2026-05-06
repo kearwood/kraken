@@ -139,21 +139,6 @@ const char* SHADER_VALUE_NAMES[] = {
   "material_transmission_map_rotation",
   "material_transmission_factor",
   
-  // Deprecated material attributes...
-  "material_diffuse",
-  "material_specular",
-  "material_speculartexture_scale",
-  "material_speculartexture_offset",
-  "material_alpha",
-  "material_shininess",
-  "material_normaltexture",
-  "material_normaltexture_scale",
-  "material_normaltexture_offset",
-  "material_diffusetexture_scale",
-  "material_diffusetexture_offset",
-  "material_ambienttexture_scale",
-  "material_ambienttexture_offset",
-  
     "light_position", // PushConstant::light_position
     "light_direction_model_space", // PushConstant::light_direction_model_space
     "light_direction_view_space", // PushConstant::light_direction_view_space
