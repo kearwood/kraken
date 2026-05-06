@@ -143,7 +143,7 @@ public:
 
   TextureMap m_specularMap{ KRTexture::TEXTURE_USAGE_MATERIAL_SPECULAR };
   float m_specularFactor{ 1.f };
-  TextureMap m_specularColorTexture{ KRTexture::TEXTURE_USAGE_MATERIAL_SPECULAR_COLOR };
+  TextureMap m_specularColorMap{ KRTexture::TEXTURE_USAGE_MATERIAL_SPECULAR_COLOR };
   hydra::Vector3 m_specularColorFactor{ 1.f, 1.f, 1.f };
 
   TextureMap m_thicknessMap{ KRTexture::TEXTURE_USAGE_MATERIAL_THICKNESS };

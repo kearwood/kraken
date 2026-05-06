@@ -277,9 +277,9 @@ KRMaterial* KRMaterialManager::loadMtl(Block* data)
               pMaterial->m_baseColorMap.scale = texture_scale;
               pMaterial->m_baseColorMap.offset = texture_offset;
             } else if (strcmp(szSymbol[0], "map_ks") == 0) {
-              pMaterial->m_specularColorTexture.texture.set(szSymbol[1]);
-              pMaterial->m_specularColorTexture.scale = texture_scale;
-              pMaterial->m_specularColorTexture.offset = texture_offset;
+              pMaterial->m_specularColorMap.texture.set(szSymbol[1]);
+              pMaterial->m_specularColorMap.scale = texture_scale;
+              pMaterial->m_specularColorMap.offset = texture_offset;
             } else if (strcmp(szSymbol[0], "map_normal") == 0) {
               pMaterial->m_normalMap.texture.set(szSymbol[1]);
               pMaterial->m_normalMap.scale = texture_scale;

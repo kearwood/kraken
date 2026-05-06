@@ -292,7 +292,7 @@ KRBundle* LoadGltf(KRContext& context, simdjson::ondemand::object& jsonRoot, std
           tryJson(extensions_KHR_materials_specular["specularFactor"].get(new_material->m_specularFactor));
           parseTextureInfo(extensions_KHR_materials_specular, "specularTexture", new_material->m_specularMap);
           tryJson(extensions_KHR_materials_specular["specularColorFactor"].get(new_material->m_specularColorFactor));
-          parseTextureInfo(extensions_KHR_materials_specular, "specularColorTexture", new_material->m_specularColorTexture);
+          parseTextureInfo(extensions_KHR_materials_specular, "specularColorTexture", new_material->m_specularColorMap);
         }
         
         simdjson::ondemand::object extensions_KHR_materials_volume;
