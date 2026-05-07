@@ -541,10 +541,15 @@ void KRPipeline::setPushConstants(const std::vector<const KRReflectedObject*> ob
       size_t size = pushConstants.size[static_cast<size_t>(i)];
       if (size != 0) {
         void* constant = (pushConstants.buffer + pushConstants.offset[static_cast<size_t>(i)]);
+        bool found = false;
         for (const KRReflectedObject* object : objects) {
           if (object->getShaderValue(static_cast<ShaderValue>(i), pushConstants.type[static_cast<size_t>(i)], constant)) {
+            found = true;
             break;
           }
+        }
+        if(!found) {
+          KRContext::Log(KRContext::LOG_LEVEL_ERROR, "Push constant not found: %s", getShaderValueName(i));
         }
       }
     }

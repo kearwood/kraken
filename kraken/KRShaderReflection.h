@@ -215,6 +215,7 @@ enum class ShaderValue : uint8_t
 };
 
 bool IsShaderValueName(int index, const char* szName);
+const char* getShaderValueName(int index);
 
 class KRReflectedObject
 {
@@ -233,5 +234,4 @@ protected:
   virtual bool getShaderValue(ShaderValue value, hydra::Matrix2x3* output) const;
   virtual bool getShaderValue(ShaderValue value, hydra::Matrix4* output) const;
   virtual bool getShaderValue(ShaderValue value, KRResourceBinding* output) const;
-
 };

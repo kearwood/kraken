@@ -213,6 +213,12 @@ bool IsShaderValueName(int index, const char* szName)
   return false;
 }
 
+const char* getShaderValueName(int index)
+{
+  assert(index >= 0 && index <= (int)ShaderValue::NUM_SHADER_VALUES);
+  return SHADER_VALUE_NAMES[index];
+}
+
 bool KRReflectedObject::getShaderValue(ShaderValue value, ShaderValueType type, void* output) const
 {
   switch (type) {
