@@ -35,6 +35,8 @@
 #include <map>
 #include "hydra.h"
 
+class KRResourceBinding;
+
 enum class ShaderValueType : uint8_t
 {
   type_null = 0,
@@ -218,6 +220,7 @@ class KRReflectedObject
 public:
   bool getShaderValue(ShaderValue value, ShaderValueType type, void* output) const;
 protected:
+  virtual bool getShaderValue(ShaderValue value, bool* output) const;
   virtual bool getShaderValue(ShaderValue value, int32_t* output) const;
   virtual bool getShaderValue(ShaderValue value, int64_t* output) const;
   virtual bool getShaderValue(ShaderValue value, float* output) const;
@@ -228,5 +231,6 @@ protected:
   virtual bool getShaderValue(ShaderValue value, hydra::Matrix2* output) const;
   virtual bool getShaderValue(ShaderValue value, hydra::Matrix2x3* output) const;
   virtual bool getShaderValue(ShaderValue value, hydra::Matrix4* output) const;
+  virtual bool getShaderValue(ShaderValue value, KRResourceBinding* output) const;
 
 };

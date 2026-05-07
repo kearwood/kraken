@@ -730,9 +730,98 @@ void KRMaterial::bind(KRNode::RenderInfo& ri, ModelFormat modelFormat, __uint32_
 bool KRMaterial::getShaderValue(ShaderValue value, float* output) const
 {
   switch (value) {
-  case ShaderValue::material_roughness_factor:
-    *output = m_roughnessFactor;
-    return true;
+    case ShaderValue::material_baseColor_map_rotation:
+      *output = m_baseColorMap.rotation;
+      return true;
+    case ShaderValue::material_normal_map_rotation:
+      *output = m_normalMap.rotation;
+      return true;
+    case ShaderValue::material_normal_scale:
+      *output = m_normalScale;
+      return true;
+    case ShaderValue::material_emissive_map_rotation:
+      *output = m_emissiveMap.rotation;
+      return true;
+    case ShaderValue::material_occlusion_map_rotation:
+      *output = m_occlusionMap.rotation;
+      return true;
+    case ShaderValue::material_occlusion_strength:
+      *output = m_occlusionStrength;
+      return true;
+    case ShaderValue::material_metalicRoughness_map_rotation:
+      *output = m_metalicRoughnessMap.rotation;
+      return true;
+    case ShaderValue::material_metalic_factor:
+      *output = m_metalicFactor;
+      return true;
+    case ShaderValue::material_roughness_factor:
+      *output = m_roughnessFactor;
+      return true;
+    case ShaderValue::material_alphaMode:
+      *output = m_alphaMode;
+      return true;
+    case ShaderValue::material_alphaCutoff:
+      *output = m_alphaCutoff;
+      return true;
+    case ShaderValue::material_ior:
+      *output = m_ior;
+      return true;
+    case ShaderValue::material_anisotropy_map_rotation:
+      *output = m_anisotropyMap.rotation;
+      return true;
+    case ShaderValue::material_anisotropy_strength:
+      *output = m_anisotropyStrength;
+      return true;
+    case ShaderValue::material_anisotropy_rotation:
+      *output = m_anisotropyRotation;
+      return true;
+    case ShaderValue::material_clearcoat_map_rotation:
+      *output = m_clearcoatMap.rotation;
+      return true;
+    case ShaderValue::material_clearcoat_factor:
+      *output = m_clearcoatFactor;
+      return true;
+    case ShaderValue::material_clearcoatRoughness_map_rotation:
+      *output = m_clearcoatRoughnessMap.rotation;
+      return true;
+    case ShaderValue::material_clearcoatRoughness_factor:
+      *output = m_clearcoatRoughnessFactor;
+      return true;
+    case ShaderValue::material_clearcoatNormal_map_rotation:
+      *output = m_clearcoatNormalMap.rotation;
+      return true;
+    case ShaderValue::material_clearcoatNormal_scale:
+      *output = m_clearcoatNormalScale;
+      return true;
+    case ShaderValue::material_dispersion:
+      *output = m_dispersion;
+      return true;
+    case ShaderValue::material_specular_map_rotation:
+      *output = m_specularMap.rotation;
+      return true;
+    case ShaderValue::material_specular_factor:
+      *output = m_specularFactor;
+      return true;
+    case ShaderValue::material_specularColor_map_rotation:
+      *output = m_specularColorMap.rotation;
+      return true;
+    case ShaderValue::material_thickness_map_rotation:
+      *output = m_thicknessMap.rotation;
+      return true;
+    case ShaderValue::material_thickness_factor:
+      *output = m_thicknessFactor;
+      return true;
+    case ShaderValue::material_attenuationDistance:
+      *output = m_attenuationDistance;
+      return true;
+    case ShaderValue::material_transmission_map_rotation:
+      *output = m_transmissionMap.rotation;
+      return true;
+    case ShaderValue::material_transmission_factor:
+      *output = m_transmissionFactor;
+      return true;
+    default:
+      return false;
   }
   return false;
 }
@@ -740,24 +829,86 @@ bool KRMaterial::getShaderValue(ShaderValue value, float* output) const
 bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector2* output) const
 {
   switch (value) {
-  case ShaderValue::material_baseColor_map_scale:
-    *output = m_baseColorMap.scale;
-    return true;
-  case ShaderValue::material_specularColor_map_scale:
-    *output = m_specularColorMap.scale;
-    return true;
-  case ShaderValue::material_normal_map_scale:
-    *output = m_normalMap.scale;
-    return true;
-  case ShaderValue::material_baseColor_map_offset:
-    *output = m_baseColorMap.offset;
-    return true;
-  case ShaderValue::material_specularColor_map_offset:
-    *output = m_specularColorMap.offset;
-    return true;
-  case ShaderValue::material_normal_map_offset:
-    *output = m_normalMap.offset;
-    return true;
+    case ShaderValue::material_baseColor_map_scale:
+      *output = m_baseColorMap.scale;
+      return true;
+    case ShaderValue::material_baseColor_map_offset:
+      *output = m_baseColorMap.offset;
+      return true;
+    case ShaderValue::material_normal_map_scale:
+      *output = m_normalMap.scale;
+      return true;
+    case ShaderValue::material_normal_map_offset:
+      *output = m_normalMap.offset;
+      return true;
+    case ShaderValue::material_emissive_map_scale:
+      *output = m_emissiveMap.scale;
+      return true;
+    case ShaderValue::material_emissive_map_offset:
+      *output = m_emissiveMap.offset;
+      return true;
+    case ShaderValue::material_occlusion_map_scale:
+      *output = m_occlusionMap.scale;
+      return true;
+    case ShaderValue::material_occlusion_map_offset:
+      *output = m_occlusionMap.offset;
+      return true;
+    case ShaderValue::material_metalicRoughness_map_scale:
+      *output = m_metalicRoughnessMap.scale;
+      return true;
+    case ShaderValue::material_metalicRoughness_map_offset:
+      *output = m_metalicRoughnessMap.offset;
+      return true;
+    case ShaderValue::material_anisotropy_map_scale:
+      *output = m_anisotropyMap.scale;
+      return true;
+    case ShaderValue::material_anisotropy_map_offset:
+      *output = m_anisotropyMap.offset;
+      return true;
+    case ShaderValue::material_clearcoat_map_scale:
+      *output = m_clearcoatMap.scale;
+      return true;
+    case ShaderValue::material_clearcoat_map_offset:
+      *output = m_clearcoatMap.offset;
+      return true;
+    case ShaderValue::material_clearcoatRoughness_map_scale:
+      *output = m_clearcoatRoughnessMap.scale;
+      return true;
+    case ShaderValue::material_clearcoatRoughness_map_offset:
+      *output = m_clearcoatRoughnessMap.offset;
+      return true;
+    case ShaderValue::material_clearcoatNormal_map_scale:
+      *output = m_clearcoatNormalMap.scale;
+      return true;
+    case ShaderValue::material_clearcoatNormal_map_offset:
+      *output = m_clearcoatNormalMap.offset;
+      return true;
+    case ShaderValue::material_specular_map_scale:
+      *output = m_specularMap.scale;
+      return true;
+    case ShaderValue::material_specular_map_offset:
+      *output = m_specularMap.offset;
+      return true;
+    case ShaderValue::material_specularColor_map_scale:
+      *output = m_specularColorMap.scale;
+      return true;
+    case ShaderValue::material_specularColor_map_offset:
+      *output = m_specularColorMap.offset;
+      return true;
+    case ShaderValue::material_thickness_map_scale:
+      *output = m_thicknessMap.scale;
+      return true;
+    case ShaderValue::material_thickness_map_offset:
+      *output = m_thicknessMap.offset;
+      return true;
+    case ShaderValue::material_transmission_map_scale:
+      *output = m_transmissionMap.scale;
+      return true;
+    case ShaderValue::material_transmission_map_offset:
+      *output = m_transmissionMap.offset;
+      return true;
+    default:
+      return false;
   }
   return false;
 }
@@ -765,9 +916,17 @@ bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector2* output) const
 bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector3* output) const
 {
   switch (value) {
-  case ShaderValue::material_specularColor_factor:
-    *output = m_specularColorFactor;
-    return true;
+    case ShaderValue::material_emissive_factor:
+      *output = m_emissiveFactor;
+      return true;
+    case ShaderValue::material_specularColor_factor:
+      *output = m_specularColorFactor;
+      return true;
+    case ShaderValue::material_attenuationColor:
+      *output = m_attenuationColor;
+      return true;
+    default:
+      return false;
   }
   return false;
 }
@@ -775,9 +934,118 @@ bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector3* output) const
 bool KRMaterial::getShaderValue(ShaderValue value, hydra::Vector4* output) const
 {
   switch (value) {
-  case ShaderValue::material_baseColor_factor:
-    *output = m_baseColorFactor;
-    return true;
+    case ShaderValue::material_baseColor_factor:
+      *output = m_baseColorFactor;
+      return true;
+    default:
+      return false;
   }
-  return false;
+}
+
+bool KRMaterial::getShaderValue(ShaderValue value, KRResourceBinding* output) const
+{
+  switch (value) {
+    case ShaderValue::material_baseColor_map_texture:
+      *output = m_baseColorMap.texture;
+      return true;
+    case ShaderValue::material_normal_map_texture:
+      *output = m_normalMap.texture;
+      return true;
+    case ShaderValue::material_emissive_map_texture:
+      *output = m_emissiveMap.texture;
+      return true;
+    case ShaderValue::material_anisotropy_map_texture:
+      *output = m_anisotropyMap.texture;
+      return true;
+    case ShaderValue::material_occlusion_map_texture:
+      *output = m_occlusionMap.texture;
+      return true;
+    case ShaderValue::material_metalicRoughness_map_texture:
+      *output = m_metalicRoughnessMap.texture;
+      return true;
+    case ShaderValue::material_specular_map_texture:
+      *output = m_specularMap.texture;
+      return true;
+    case ShaderValue::material_specularColor_map_texture:
+      *output = m_specularColorMap.texture;
+      return true;
+    case ShaderValue::material_clearcoat_map_texture:
+      *output = m_clearcoatMap.texture;
+      return true;
+    case ShaderValue::material_clearcoatRoughness_map_texture:
+      *output = m_clearcoatRoughnessMap.texture;
+      return true;
+    case ShaderValue::material_clearcoatNormal_map_texture:
+      *output = m_clearcoatNormalMap.texture;
+      return true;
+    case ShaderValue::material_thickness_map_texture:
+      *output = m_thicknessMap.texture;
+      return true;
+    case ShaderValue::material_transmission_map_texture:
+      *output = m_transmissionMap.texture;
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool KRMaterial::getShaderValue(ShaderValue value, int64_t* output) const
+{
+  switch (value) {
+    case ShaderValue::material_shadingModel:
+      *output = m_shadingModel;
+      return true;
+    case ShaderValue::material_baseColor_map_texCoord:
+      *output = m_baseColorMap.texCoord;
+      return true;
+    case ShaderValue::material_normal_map_texCoord:
+      *output = m_normalMap.texCoord;
+      return true;
+    case ShaderValue::material_emissive_map_texCoord:
+      *output = m_emissiveMap.texCoord;
+      return true;
+    case ShaderValue::material_occlusion_map_texCoord:
+      *output = m_occlusionMap.texCoord;
+      return true;
+    case ShaderValue::material_metalicRoughness_map_texCoord:
+      *output = m_metalicRoughnessMap.texCoord;
+      return true;
+    case ShaderValue::material_anisotropy_map_texCoord:
+      *output = m_anisotropyMap.texCoord;
+      return true;
+    case ShaderValue::material_clearcoat_map_texCoord:
+      *output = m_clearcoatMap.texCoord;
+      return true;
+    case ShaderValue::material_clearcoatRoughness_map_texCoord:
+      *output = m_clearcoatRoughnessMap.texCoord;
+      return true;
+    case ShaderValue::material_clearcoatNormal_map_texCoord:
+      *output = m_clearcoatNormalMap.texCoord;
+      return true;
+    case ShaderValue::material_specular_map_texCoord:
+      *output = m_specularMap.texCoord;
+      return true;
+    case ShaderValue::material_specularColor_map_texCoord:
+      *output = m_specularColorMap.texCoord;
+      return true;
+    case ShaderValue::material_thickness_map_texCoord:
+      *output = m_thicknessMap.texCoord;
+      return true;
+    case ShaderValue::material_transmission_map_texCoord:
+      *output = m_transmissionMap.texCoord;
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool KRMaterial::getShaderValue(ShaderValue value, bool* output) const
+{
+  switch (value) {
+    case ShaderValue::material_doubleSided:
+      *output = m_doubleSided;
+      return true;
+    default:
+      return false;
+  }
 }

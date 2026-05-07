@@ -159,4 +159,7 @@ private:
   bool getShaderValue(ShaderValue value, hydra::Vector2* output) const final;
   bool getShaderValue(ShaderValue value, hydra::Vector3* output) const final;
   bool getShaderValue(ShaderValue value, hydra::Vector4* output) const final;
+  bool getShaderValue(ShaderValue value, KRResourceBinding* output) const final;
+  bool getShaderValue(ShaderValue value, int64_t* output) const final;
+  bool getShaderValue(ShaderValue value, bool* output) const final;
 };

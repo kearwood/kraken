@@ -241,6 +241,11 @@ bool KRReflectedObject::getShaderValue(ShaderValue value, ShaderValueType type, 
   }
 }
 
+bool KRReflectedObject::getShaderValue(ShaderValue value, bool* output) const
+{
+  return false;
+}
+
 bool KRReflectedObject::getShaderValue(ShaderValue value, int32_t* output) const
 {
   return false;
@@ -287,6 +292,11 @@ bool KRReflectedObject::getShaderValue(ShaderValue value, hydra::Matrix2x3* outp
 }
 
 bool KRReflectedObject::getShaderValue(ShaderValue value, hydra::Matrix4* output) const
+{
+  return false;
+}
+
+bool KRReflectedObject::getShaderValue(ShaderValue value, KRResourceBinding* output) const
 {
   return false;
 }
