@@ -216,6 +216,8 @@ bool IsShaderValueName(int index, const char* szName)
 bool KRReflectedObject::getShaderValue(ShaderValue value, ShaderValueType type, void* output) const
 {
   switch (type) {
+  case ShaderValueType::type_bool:
+    return getShaderValue(value, static_cast<bool*>(output));
   case ShaderValueType::type_int32:
     return getShaderValue(value, static_cast<int32_t*>(output));
   case ShaderValueType::type_int64:

@@ -40,6 +40,7 @@ class KRResourceBinding;
 enum class ShaderValueType : uint8_t
 {
   type_null = 0,
+  type_bool,
   type_int32,
   type_int64,
   type_float32,

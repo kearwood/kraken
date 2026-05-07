@@ -446,16 +446,18 @@ void KRPipeline::initPushConstantStage(ShaderStage stage, const SpvReflectShader
               pushConstants.size[iUniform] = member.size;
               if (member.type_description->op == SpvOpTypeVector && member.numeric.scalar.width == 32) {
                 switch (member.numeric.vector.component_count) {
-                case 2:
-                  pushConstants.type[iUniform] = ShaderValueType::type_vector2;
-                  break;
-                case 3:
-                  pushConstants.type[iUniform] = ShaderValueType::type_vector3;
-                  break;
-                case 4:
-                  pushConstants.type[iUniform] = ShaderValueType::type_vector4;
-                  break;
+                  case 2:
+                    pushConstants.type[iUniform] = ShaderValueType::type_vector2;
+                    break;
+                  case 3:
+                    pushConstants.type[iUniform] = ShaderValueType::type_vector3;
+                    break;
+                  case 4:
+                    pushConstants.type[iUniform] = ShaderValueType::type_vector4;
+                    break;
                 }
+              } else if (member.type_description->op == SpvOpTypeBool) {
+                pushConstants.type[iUniform] = ShaderValueType::type_bool;
               } else if (member.type_description->op == SpvOpTypeFloat && member.numeric.scalar.width == 32) {
                 pushConstants.type[iUniform] = ShaderValueType::type_float32;
               } else if (member.type_description->op == SpvOpTypeFloat && member.numeric.scalar.width == 64) {
