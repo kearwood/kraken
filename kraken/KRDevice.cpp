@@ -387,7 +387,7 @@ bool KRDevice::initAllocator()
   vmaCreateInfo.physicalDevice = m_device;
   vmaCreateInfo.device = m_logicalDevice;
   vmaCreateInfo.instance = m_pContext->getDeviceManager()->getVulkanInstance();
-  vmaCreateInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+  vmaCreateInfo.vulkanApiVersion = VK_API_VERSION_1_3;
   vmaCreateInfo.pVulkanFunctions = &vmaVulkanFunctions;
   if (vmaCreateAllocator(&vmaCreateInfo, &m_allocator) != VK_SUCCESS) {
     return false;
