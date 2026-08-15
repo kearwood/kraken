@@ -227,5 +227,5 @@ private:
 
   virtual bool getShaderValue(const KRCamera* camera, ShaderValue value, float* output) const;
 
-  mimir::Arena m_frameAllocators[KRENGINE_MAX_FRAMES_IN_FLIGHT];
+  mimir::Arena m_frameAllocators[KRENGINE_MAX_FRAMES_IN_FLIGHT] = {};
 };
