@@ -45,6 +45,8 @@
 #include "nodes/KRBone.h"
 #include "KRShaderReflection.h"
 
+#include <limits>
+
 enum class CullMode : __uint32_t;
 enum class ModelFormat : __uint8_t;
 enum class Topology : __uint8_t;
@@ -178,7 +180,7 @@ public:
 
   TextureMap m_thicknessMap{ KRTexture::TEXTURE_USAGE_MATERIAL_THICKNESS };
   float m_thicknessFactor{ 0.f };
-  float m_attenuationDistance{ std::numeric_limits<float>::max() };
+  float m_attenuationDistance{ std::numeric_limits<float>::max()};
   hydra::Vector3 m_attenuationColor{ 1.f, 1.f, 1.f };
 
   TextureMap m_transmissionMap{ KRTexture::TEXTURE_USAGE_MATERIAL_TRANSMISSION };

@@ -49,6 +49,7 @@
 #include "KRDeviceManager.h"
 #include "KRDevice.h"
 #include "KRSurface.h"
+#include "arena.h"
 
 class KRAudioManager;
 class KRPresentationThread;
@@ -225,4 +226,6 @@ private:
   unordered_map<KrSurfaceMapIndex, KrSurfaceHandle> m_surfaceHandleMap;
 
   virtual bool getShaderValue(const KRCamera* camera, ShaderValue value, float* output) const;
+
+  mimir::Arena m_frameAllocators[KRENGINE_MAX_FRAMES_IN_FLIGHT];
 };
