@@ -486,7 +486,7 @@ void KRCamera::renderPost(RenderInfo& ri)
 void KRCamera::renderDebug(RenderInfo& ri)
 {
 
-  settings.m_debug_text = std::format("Frame Number {}", (getContext().getCurrentFrame()); // FNIDME!! KIPG!! HACK!! Debug text debugging...
+  settings.m_debug_text = std::format("Frame Number {}", getContext().getCurrentFrame()); // FNIDME!! KIPG!! HACK!! Debug text debugging...
 
   const char* szText = settings.m_debug_text.c_str();
   if (*szText == '\0') {
