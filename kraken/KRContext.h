@@ -50,6 +50,7 @@
 #include "KRDevice.h"
 #include "KRSurface.h"
 #include "arena.h"
+#include "heap.h"
 
 class KRAudioManager;
 class KRPresentationThread;
@@ -228,4 +229,5 @@ private:
   virtual bool getShaderValue(const KRCamera* camera, ShaderValue value, float* output) const;
 
   mimir::Arena m_frameAllocators[KRENGINE_MAX_FRAMES_IN_FLIGHT] = {};
+  mimir::Heap m_heap = {};
 };

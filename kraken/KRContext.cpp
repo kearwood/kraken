@@ -114,6 +114,10 @@ KRContext::KRContext(const KrInitializeInfo* initializeInfo)
   m_streamingEnabled = true;
 
   mimir::init();
+  m_heap.init();
+  for (int i = 0; i < KRENGINE_MAX_FRAMES_IN_FLIGHT; i++) {
+    m_frameAllocators[i].init();
+  }
 
   m_presentationThread->start();
   m_streamerThread->start();
@@ -563,6 +567,14 @@ KrResult KRContext::saveResource(const KrSaveResourceInfo* saveResourceInfo)
 
 void KRContext::startFrame(float deltaTime)
 {
+  m_frameAllocators[m_current_frame % KRENGINE_MAX_FRAMES_IN_FLIGHT].reset();
+
+  for (int i = 0; i < 100; i++) {
+    size_t s = 67ULL << 8;
+    std::byte* a = m_frameAllocators[m_current_frame % KRENGINE_MAX_FRAMES_IN_FLIGHT].alloc(s);
+    memset(a, 0, s);
+  }
+
   m_pTextureManager->startFrame(deltaTime);
   m_pAnimationManager->startFrame(deltaTime);
   m_pSoundManager->startFrame(deltaTime);
